@@ -1,0 +1,14 @@
+{
+  "name": "pong-game",
+  "version": "1.0.0",
+  "description": "Pong game for ft_transcendence",
+  "main": "src/game.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
