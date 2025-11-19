@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .menu-content,
+  .dashboard-content {
+    @apply bg-black/70 p-8 rounded-2xl border-2 border-primary text-center max-w-lg w-full;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+  }
+
+  .cta-button {
+    @apply bg-secondary text-black border-none py-3 px-8 text-xl rounded-full cursor-pointer font-bold transition-all duration-300 uppercase m-1;
+  }
+
+  .cta-button:hover {
+    @apply bg-primary scale-105;
+    box-shadow: 0 0 15px #00ffff;
+  }
+
+  .quit-button {
+    @apply bg-red-500 text-white border-none py-2.5 px-5 text-base rounded-full cursor-pointer font-bold mt-5;
+  }
+
+  .quit-button:hover {
+    @apply bg-red-400;
+  }
+}

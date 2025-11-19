@@ -1,19 +1,25 @@
 {
-  "devDependencies": {
-    "@types/node": "^24.10.1",
-    "typescript": "^5.9.3"
-  },
   "name": "ft_transcendence",
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
+  "scripts": {
+    "build": "tsc && npm run css",
+    "css": "tailwindcss -i ./src/input.css -o ./dist/output.css --minify",
+    "css:watch": "tailwindcss -i ./src/input.css -o ./dist/output.css --watch",
+    "dev": "npm run css:watch & tsc --watch",
+    "serve": "http-server . -p 8080",
+    "start": "npm run build && npm run serve"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3"
+  },
   "dependencies": {
     "undici-types": "^7.16.0"
-  },
-  "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch",
-    "dev": "tsc --watch"
   },
   "repository": {
     "type": "git",

@@ -4,54 +4,57 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>SPA Pong - ft_transcendence</title>
-	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="dist/output.css">
 </head>
-<body>
+<body class="font-mono bg-gradient-to-br from-dark to-darker text-white overflow-hidden m-0 p-0">
 
-	<div id="login-view" class="view">
+	<div id="login-view" class="view w-full min-h-screen flex justify-center items-center p-5">
 		<div class="menu-content">
-			<h2>Bem-vindo ao Pong</h2>
-			<p class="subtitle">Faça login para continuar ou entre como visitante.</p>
+			<h2 class="text-primary mb-4 text-5xl">Bem-vindo ao Pong</h2>
+			<p class="subtitle text-gray-200 text-xl mb-8">Faça login para continuar ou entre como visitante.</p>
 
 			<button id="loginGuestButton" class="cta-button">Entrar como Visitante</button>
 		</div>
 	</div>
 
-	<div id="dashboard-view" class="view hidden">
+	<div id="dashboard-view" class="view hidden w-full min-h-screen flex justify-center items-center p-5">
 		<div class="dashboard-content">
-			<h1>Olá, <span id="dashboard-username">Visitante</span>!</h1>
-			<p>Bem-vindo ao seu dashboard.</p>
+			<h1 class="text-primary mb-4 text-5xl">Olá, <span id="dashboard-username">Visitante</span>!</h1>
+			<p class="text-gray-200 text-xl mb-8">Bem-vindo ao seu dashboard.</p>
 
 			<button id="playGameButton" class="cta-button">Jogar Agora!</button>
 
-			<h3>Seu Histórico de Partidas (Sessão)</h3>
-			<ul id="match-history-list">
-				<li>(Nenhuma partida jogada ainda)</li>
+			<h3 class="text-secondary mt-8 mb-4 text-2xl">Seu Histórico de Partidas (Sessão)</h3>
+			<ul id="match-history-list" class="list-none p-0 max-h-52 overflow-y-auto bg-black/30 rounded-md p-2.5">
+				<li class="p-2 border-b border-gray-700">(Nenhuma partida jogada ainda)</li>
 			</ul>
 		</div>
 	</div>
 
-	<div id="game-view" class="view hidden">
-		<div id="gameContainer">
+	<div id="game-view" class="view hidden w-full min-h-screen flex justify-center items-center p-5">
+		<div id="gameContainer" class="text-center">
 			<div id="gameHeader">
-				<h1>PONG</h1>
-				<div id="score">
+				<h1 class="text-6xl text-primary mb-2.5" style="text-shadow: 0 0 10px #00ffff;">PONG</h1>
+				<div id="score" class="text-4xl font-bold text-secondary">
 					<span id="player1Score">0</span> - <span id="player2Score">0</span>
 				</div>
 			</div>
-			<div id="gameArea">
-				<canvas id="pongCanvas"></canvas>
+
+			<div id="gameArea" class="my-5">
+				<canvas id="pongCanvas" class="border-4 border-primary rounded-xl bg-black shadow-neon"></canvas>
 			</div>
-			<div id="gameControls">
+
+			<div id="gameControls" class="flex justify-around my-5 p-4 bg-primary/10 rounded-xl">
 				<div class="control-group">
-					<h3>Player 1</h3>
-					<p>W ⬆️ | S ⬇️</p>
+					<h3 class="text-secondary mb-2">Player 1</h3>
+					<p class="text-xl">W ⬆️ | S ⬇️</p>
 				</div>
 				<div class="control-group">
-					<h3>Player 2</h3>
-					<p>↑ ⬆️ | ↓ ⬇️</p>
+					<h3 class="text-secondary mb-2">Player 2</h3>
+					<p class="text-xl">↑ ⬆️ | ↓ ⬇️</p>
 				</div>
 			</div>
+
 			<button id="quitGameButton" class="quit-button">Sair da Partida</button>
 		</div>
 	</div>

@@ -1,20 +1,26 @@
-.PHONY: all install build dev serve clean fclean re
+.PHONY: all install build dev serve clean fclean re css
 
-all: install build
+all: install css build
 
 install:
 	@npm install
+
+css:
+	@npx tailwindcss -i ./src/input.css -o ./dist/output.css --minify
+
+css-watch:
+	@npx tailwindcss -i ./src/input.css -o ./dist/output.css --watch
 
 build:
 	@npx tsc
 
 dev:
-	@npx tsc --watch
+	@npx tsc --watch & npx tailwindcss -i ./src/input.css -o ./dist/output.css --watch
 
-serve: build
+serve: css build
 	@npx http-server . -p 8080
 
-run: build
+run: css build
 	@npx http-server . -p 8080 -o
 
 clean:
