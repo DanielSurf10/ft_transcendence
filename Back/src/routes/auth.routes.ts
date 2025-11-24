@@ -7,7 +7,8 @@ interface User {
 	nick: string;
 	email: string;
 	password?: string;
-	isAnonymous: boolean
+	isAnonymous: boolean;
+	lastActivity?: number
 }
 
 const registerSchema = {
@@ -48,8 +49,8 @@ const anonymousSchema = {
 	}
 }
 
-// const ANONYMOUS_INACTIVITY_TIMEOUT	= 5 * 60 * 1000;	// 5 minutos de inatividade
-// const CLEANUP_INTERVAL				= 1 * 60 * 1000;	// A cada 1 minuto
+const ANONYMOUS_INACTIVITY_TIMEOUT	= 5 * 60 * 1000;	// 5 minutos de inatividade
+const CLEANUP_INTERVAL				= 1 * 60 * 1000;	// A cada 1 minuto
 
 const	users: User[] = []
 let		nextId = 1
@@ -70,7 +71,42 @@ function findByIdentifier(identifier: string): User | undefined {
 	))
 }
 
+function updateActivity(userId: number) {
+	const user = users.find(u => u.id == userId)
+	if (user && user.isAnonymous) {
+		user.lastActivity = Date.now()
+	}
+}
+
+function cleanupInactiveAnonymous() {
+	const now = Date.now()
+	const before = users.length
+
+	const activeUsers = users.filter(user => {
+		if (!user.isAnonymous)
+			return (true)
+		if (!user.lastActivity)
+			return (false)
+
+		const inactiveTime = now - user.lastActivity
+		return (inactiveTime < ANONYMOUS_INACTIVITY_TIMEOUT)
+	})
+
+	const removed = before - activeUsers.length
+	if (removed > 0) {
+		users.length = 0
+		users.push(...activeUsers)
+	}
+}
+
 export async function authRoutes(app: FastifyInstance) {
+
+	const cleanupTimer = setInterval(cleanupInactiveAnonymous, CLEANUP_INTERVAL)
+
+	app.addHook('onClose', () => {
+		clearInterval(cleanupTimer)
+	})
+
 	app.post('/auth/register', { schema: registerSchema }, async (req, reply) => {
 		const { name, nick, email, password } = req.body as User
 
@@ -131,7 +167,8 @@ export async function authRoutes(app: FastifyInstance) {
 			name: generatedNick,
 			nick: generatedNick,
 			email: `anonymous_${nextId}@local`,
-			isAnonymous: true
+			isAnonymous: true,
+			lastActivity: Date.now()
 		}
 		users.push(user)
 
@@ -152,6 +189,24 @@ export async function authRoutes(app: FastifyInstance) {
 		if (!user) {
 			return (reply.code(404).send({ error: 'Usuário não encontrado' }))
 		}
+
+		updateActivity(user.id)
+
 		return ({ user: sanitize(user) })
+	})
+
+	app.post('/auth/logout', {
+		onRequest: [app.authenticate]
+	}, async (req: any, reply) => {
+		const userId = req.user.id
+		const userIndex = users.findIndex(u => u.id === userId)
+
+		if (userIndex === -1) {
+			return (reply.code(404).send({ error: 'Usuário não encontrado' }))
+		}
+
+		users.splice(userIndex, 1)
+
+		return ({ message: 'Logout realizado com sucesso' })
 	})
 }
