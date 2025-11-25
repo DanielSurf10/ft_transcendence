@@ -1,5 +1,4 @@
 import '@fastify/jwt'
-import 'fastify'
 import { FastifyRequest, FastifyReply } from 'fastify'
 
 declare module '@fastify/jwt' {

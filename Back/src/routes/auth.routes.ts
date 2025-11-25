@@ -1,13 +1,21 @@
-import { FastifyInstance, FastifyRequest } from 'fastify'
 import bcrypt from 'bcrypt'
+import { FastifyInstance, FastifyRequest } from 'fastify'
+
 import {
-	registerSchema,
-	loginSchema,
+	AnonymousInput,
 	anonymousSchema,
-	RegisterInput,
 	LoginInput,
-	AnonymousInput
+	loginSchema,
+	RegisterInput,
+	registerSchema
 } from '../schemas/auth.schemas'
+import {
+	anonymousRouteSchema,
+	loginRouteSchema,
+	logoutRouteSchema,
+	meRouteSchema,
+	registerRouteSchema
+} from '../schemas/swagger/route.schemas'
 
 interface User {
 	id: number;
@@ -25,6 +33,132 @@ const CLEANUP_INTERVAL				= 1 * 60 * 1000	// A cada 1 minuto
 
 const	users: User[] = []
 let		nextId = 1
+
+// Schemas JSON Schema completos com exemplos
+// const registerBodySchema = {
+// 	type: 'object',
+// 	required: ['name', 'nick', 'email', 'password', 'gang'],
+// 	properties: {
+// 		name: {
+// 			type: 'string',
+// 			minLength: 3,
+// 			maxLength: 50,
+// 			description: 'Nome completo do usuário',
+// 			examples: ['João Silva']
+// 		},
+// 		nick: {
+// 			type: 'string',
+// 			minLength: 3,
+// 			maxLength: 20,
+// 			description: 'Apelido único',
+// 			examples: ['joao123']
+// 		},
+// 		email: {
+// 			type: 'string',
+// 			format: 'email',
+// 			description: 'Email válido',
+// 			examples: ['joao@example.com']
+// 		},
+// 		password: {
+// 			type: 'string',
+// 			minLength: 8,
+// 			description: 'Senha forte',
+// 			examples: ['Senha@123']
+// 		},
+// 		gang: {
+// 			type: 'string',
+// 			enum: ['batatas', 'maças'],
+// 			description: 'Gangue do usuário',
+// 			examples: ['batatas']
+// 		}
+// 	}
+// }
+//
+// const loginBodySchema = {
+// 	type: 'object',
+// 	required: ['identifier', 'password'],
+// 	properties: {
+// 		identifier: {
+// 			type: 'string',
+// 			minLength: 2,
+// 			description: 'Email ou nick do usuário',
+// 			examples: ['joao123']
+// 		},
+// 		password: {
+// 			type: 'string',
+// 			minLength: 8,
+// 			description: 'Senha do usuário',
+// 			examples: ['Senha@123']
+// 		}
+// 	}
+// }
+//
+// const anonymousBodySchema = {
+// 	type: 'object',
+// 	required: ['nick'],
+// 	properties: {
+// 		nick: {
+// 			type: 'string',
+// 			minLength: 3,
+// 			maxLength: 50,
+// 			description: 'Apelido temporário',
+// 			examples: ['visitante']
+// 		}
+// 	}
+// }
+//
+// const userResponseSchema = {
+// 	type: 'object',
+// 	properties: {
+// 		id: { type: 'number', examples: [1] },
+// 		name: { type: 'string', examples: ['João Silva'] },
+// 		nick: { type: 'string', examples: ['joao123'] },
+// 		email: { type: 'string', examples: ['joao@example.com'] },
+// 		isAnonymous: { type: 'boolean', examples: [false] },
+// 		gang: { type: 'string', examples: ['batatas'] }
+// 	}
+// }
+//
+// const tokenResponseSchema = {
+// 	type: 'object',
+// 	properties: {
+// 		token: {
+// 			type: 'string',
+// 			examples: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...']
+// 		},
+// 		user: userResponseSchema
+// 	}
+// }
+//
+// const errorResponseSchema = {
+// 	type: 'object',
+// 	properties: {
+// 		error: {
+// 			type: 'string',
+// 			examples: ['Mensagem de erro']
+// 		}
+// 	}
+// }
+//
+// const validationErrorResponseSchema = {
+// 	type: 'object',
+// 	properties: {
+// 		error: {
+// 			type: 'string',
+// 			examples: ['Validação falhou']
+// 		},
+// 		details: {
+// 			type: 'array',
+// 			items: {
+// 				type: 'object',
+// 				properties: {
+// 					field: { type: 'string', examples: ['email'] },
+// 					message: { type: 'string', examples: ['Email inválido'] }
+// 				}
+// 			}
+// 		}
+// 	}
+// }
 
 function sanitize(user: User) {
 	return {
@@ -80,6 +214,7 @@ export async function authRoutes(app: FastifyInstance) {
 	})
 
 	app.post('/register', {
+		schema: registerRouteSchema,
 		preHandler: app.validateBody(registerSchema)
 	}, async (req, reply) => {
 		const { name, nick, email, password, gang } = req.body as RegisterInput
@@ -107,6 +242,7 @@ export async function authRoutes(app: FastifyInstance) {
 	})
 
 	app.post('/login', {
+		schema: loginRouteSchema,
 		preHandler: app.validateBody(loginSchema)
 	}, async (req, reply) => {
 		const { identifier, password } = req.body as LoginInput
@@ -133,6 +269,7 @@ export async function authRoutes(app: FastifyInstance) {
 	})
 
 	app.post('/anonymous', {
+		schema: anonymousRouteSchema,
 		preHandler: app.validateBody(anonymousSchema)
 	}, async (req, reply) => {
 		const { nick } = req.body as AnonymousInput
@@ -165,7 +302,8 @@ export async function authRoutes(app: FastifyInstance) {
 	})
 
 	app.get('/me', {
-		onRequest: [app.authenticate]
+		onRequest: [app.authenticate],
+		schema: meRouteSchema
 	}, async (req: FastifyRequest, reply) => {
 		const user = users.find(u => u.id === req.user.id)
 		if (!user) {
@@ -178,7 +316,8 @@ export async function authRoutes(app: FastifyInstance) {
 	})
 
 	app.post('/logout', {
-		onRequest: [app.authenticate]
+		onRequest: [app.authenticate],
+		schema: logoutRouteSchema
 	}, async (req: FastifyRequest, reply) => {
 		const userId = req.user.id
 		const userIndex = users.findIndex(u => u.id === userId)
@@ -188,5 +327,7 @@ export async function authRoutes(app: FastifyInstance) {
 		}
 
 		users.splice(userIndex, 1)
+
+		return (reply.code(200).send())
 	})
 }

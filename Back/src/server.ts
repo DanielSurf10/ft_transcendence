@@ -3,6 +3,7 @@ import jwt from '@fastify/jwt'
 import dotenv from 'dotenv'
 import fastify, { FastifyReply, FastifyRequest } from 'fastify'
 
+import swaggerPlugin from './plugins/swagger'
 import zodValidator from './plugins/zod-validator'
 import { authRoutes } from './routes/auth.routes'
 
@@ -14,9 +15,8 @@ app.register(cors, {
 	origin: '*'
 })
 
-app.register(jwt, {
-	secret: process.env.JWT_SECRET || 'JWT_SECRET'
-})
+app.register(jwt, { secret: process.env.JWT_SECRET || 'JWT_SECRET' })
+app.register(swaggerPlugin)
 
 app.decorate('authenticate', async function (req: FastifyRequest, reply: FastifyReply) {
 	try {
