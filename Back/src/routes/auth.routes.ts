@@ -188,7 +188,5 @@ export async function authRoutes(app: FastifyInstance) {
 		}
 
 		users.splice(userIndex, 1)
-
-		return ({ message: 'Logout realizado com sucesso' })
 	})
 }
