@@ -1,5 +1,13 @@
 import { FastifyInstance } from "fastify";
 import bcrypt from 'bcrypt'
+import {
+	registerSchema,
+	loginSchema,
+	anonymousSchema,
+	RegisterInput,
+	LoginInput,
+	AnonymousInput
+} from "../schemas/auth.schemas";
 
 interface User {
 	id: number;
@@ -10,45 +18,6 @@ interface User {
 	isAnonymous: boolean;
 	lastActivity?: number;
 	gang: 'batatas' | 'maças'
-}
-
-const registerSchema = {
-	body: {
-		type: 'object',
-		required: ['name', 'nick', 'email', 'password', 'gang'],
-		additionalProperties: false,
-		properties: {
-			name: { type: 'string', minLength: 1 },
-			nick: { type: 'string', minLength: 2 },
-			email: { type: 'string', format: 'email' },
-			password: { type: 'string', minLength: 4 },
-			gang: { type: 'string', enum: ['batatas', 'maças' ] }
-		}
-	}
-}
-
-const loginSchema = {
-	body: {
-		type: 'object',
-		required: ['identifier', 'password'],
-		additionalProperties: false,
-		properties: {
-			identifier: { type: 'string', minLength: 2 },
-			password: { type: 'string', minLength: 4 }
-		}
-	}
-}
-
-// Schema anônimo
-const anonymousSchema = {
-	body: {
-		type: 'object',
-		additionalProperties: false,
-		properties: {
-			name: { type: 'string', minLength: 1 },
-			nick: { type: 'string', minLength: 2 }
-		}
-	}
 }
 
 const ANONYMOUS_INACTIVITY_TIMEOUT	= 5 * 60 * 1000;	// 5 minutos de inatividade
@@ -110,8 +79,10 @@ export async function authRoutes(app: FastifyInstance) {
 		clearInterval(cleanupTimer)
 	})
 
-	app.post('/register', { schema: registerSchema }, async (req, reply) => {
-		const { name, nick, email, password, gang } = req.body as User
+	app.post('/register', {
+		preHandler: app.validateBody(registerSchema)
+	}, async (req, reply) => {
+		const { name, nick, email, password, gang } = req.body as RegisterInput
 
 		if (users.find(u => u.nick === nick)) {
 			return (reply.code(400).send({ error: 'Nick já em uso' }))
@@ -135,8 +106,10 @@ export async function authRoutes(app: FastifyInstance) {
 		return (sanitize(user))
 	})
 
-	app.post('/login', { schema: loginSchema }, async (req, reply) => {
-		const { identifier, password } = req.body as { identifier: string; password: string }
+	app.post('/login', {
+		preHandler: app.validateBody(loginSchema)
+	}, async (req, reply) => {
+		const { identifier, password } = req.body as LoginInput
 
 		const user = findByIdentifier(identifier)
 		if (!user || !user.password) {
@@ -159,8 +132,10 @@ export async function authRoutes(app: FastifyInstance) {
 		return { token, user: sanitize(user) }
 	})
 
-	app.post('/anonymous', { schema: anonymousSchema }, async (req, reply) => {
-		const { nick } = req.body as { nick: string }
+	app.post('/anonymous', {
+		preHandler: app.validateBody(anonymousSchema)
+	}, async (req, reply) => {
+		const { nick } = req.body as AnonymousInput
 
 		const generatedNick = `anonymous_${nick}`
 		if (users.find(u => u.nick === generatedNick && u.isAnonymous)) {

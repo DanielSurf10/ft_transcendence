@@ -1,13 +1,18 @@
 import fastify from 'fastify'
+import cors from '@fastify/cors'
 import dotenv from 'dotenv'
 import jwt from '@fastify/jwt'
 
-import { pingRoutes } from './routes/ping.routes'
 import { authRoutes } from './routes/auth.routes'
+import zodValidator from './plugins/zod-validator'
 
 dotenv.config()
 
 const app = fastify()
+
+app.register(cors, {
+	origin: '*'
+})
 
 app.register(jwt, {
 	secret: process.env.JWT_SECRET || 'JWT_SECRET'
@@ -22,7 +27,7 @@ app.decorate('authenticate', async function (req: any, reply: any) {
 })
 
 // Rotas
-app.register(pingRoutes)
+app.register(zodValidator)
 app.register(authRoutes, { prefix: '/auth'})
 
 // Rodar
