@@ -4,7 +4,6 @@ import {
 	registerBodySchema
 } from './request.schemas'
 import {
-	tokenResponseSchema,
 	userResponseSchema
 } from './response.schemas'
 
@@ -44,41 +43,41 @@ export const registerRouteSchema = {
 export const loginRouteSchema = {
 	tags: ['auth'],
 	summary: 'Fazer login',
-	description: 'Autentica um usuário usando email ou nick e retorna um token JWT',
+	description: 'Autentica um usuário usando email ou nick. Se 2FA estiver ativado, retorna token temporário.',
 	body: loginBodySchema,
 	response: {
 		200: {
-			description: 'Login bem-sucedido',
-			...tokenResponseSchema
+			description: 'Login bem-sucedido ou requer 2FA',
+			type: 'object',
+			properties: {
+				// Propriedades quando NÃO tem 2FA
+				token: { type: 'string' },
+				user: userResponseSchema,
+				// Propriedades quando TEM 2FA
+				requires2FA: { type: 'boolean' },
+				tempToken: { type: 'string' },
+				message: { type: 'string' }
+			}
 		},
 		400: {
 			description: 'Validação falhou',
 			type: 'object',
 			properties: {
-				error: {
-					type: 'string',
-					examples: ['Validação falhou']
-				},
-				details: {
-					type: 'array',
-					items: {
-						type: 'object',
-						properties: {
-							field: { type: 'string', examples: ['identifier', 'password'] },
-							message: { type: 'string', examples: ['Identificador deve ter no mínimo 2 caracteres', 'Senha deve ter no mínimo 8 caracteres'] }
-						}
-					}
-				}
+				error: { type: 'string', examples: ['Validação falhou'] }
 			}
 		},
 		401: {
 			description: 'Credenciais inválidas',
 			type: 'object',
 			properties: {
-				error: {
-					type: 'string',
-					examples: ['Credenciais inválidas']
-				}
+				error: { type: 'string', examples: ['Credenciais inválidas'] }
+			}
+		},
+		404: {
+			description: 'Usuário não encontrado',
+			type: 'object',
+			properties: {
+				error: { type: 'string', examples: ['Credenciais inválidas'] }
 			}
 		}
 	}

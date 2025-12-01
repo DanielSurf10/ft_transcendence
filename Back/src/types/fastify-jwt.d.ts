@@ -1,5 +1,5 @@
-import '@fastify/jwt'
-import { FastifyRequest, FastifyReply } from 'fastify'
+import '@fastify/jwt';
+import 'fastify';
 
 declare module '@fastify/jwt' {
 	interface FastifyJWT {
@@ -9,6 +9,7 @@ declare module '@fastify/jwt' {
 			nick: string;
 			isAnonymous: boolean;
 			gang: string
+			temp2FA?: boolean
 		}
 		user: {
 			id: number;
@@ -16,6 +17,7 @@ declare module '@fastify/jwt' {
 			nick: string;
 			isAnonymous: boolean;
 			gang: string
+			temp2FA?: boolean
 		}
 	}
 }
@@ -23,5 +25,8 @@ declare module '@fastify/jwt' {
 declare module 'fastify' {
 	interface FastifyInstance {
 		authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+		authenticate2FA: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+		updateLastActivity: (req: FastifyRequest) => void;
+		validateBody: <T>(schema: ZodType<T>) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>
 	}
 }
