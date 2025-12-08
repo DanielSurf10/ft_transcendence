@@ -1,6 +1,7 @@
 import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
+import { state } from "@/main";
 
 const StatItem = (label: string, valueId: string, colorClass: string = "text-white") => `
 	<div class="bg-black/30 p-4 rounded-xl border border-white/5 text-center hover:border-white/10 transition">
@@ -10,6 +11,8 @@ const StatItem = (label: string, valueId: string, colorClass: string = "text-whi
 `;
 
 export function getProfileHtml() {
+
+	const userGang = state.user?.gang === 'batatas' ? 'Batatas' : 'Tomates';
 
 	return `
 		<img src="src/assets/bg-login.png" alt="Background" class="fixed inset-0 w-full h-full object-cover -z-10 opacity-30" />
@@ -27,7 +30,7 @@ export function getProfileHtml() {
 
 						<div class="flex flex-col items-center gap-4 min-w-[200px]">
 							<div class="relative w-48 h-48 rounded-full overflow-hidden border-4 border-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.2)] bg-black group cursor-pointer">
-								<img id="profile-img" src="https://placehold.co/400x400/0f172a/white?text=User" class="w-full h-full object-cover transition duration-500 group-hover:scale-110" />
+								<img id="profile-img" src="${userGang === 'Batatas' ? 'src/assets/perfil-batata.png' : 'src/assets/perfil-tomate.png'}" class="w-full h-full object-cover transition duration-500 group-hover:scale-110" />
 
 								<div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-300">
 									<span class="text-sm font-bold text-white uppercase tracking-wider">Trocar Foto</span>
