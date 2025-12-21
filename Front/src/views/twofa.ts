@@ -16,6 +16,8 @@ export function get2FAHtml(data: {
 	const gang = user?.gang || 'potatoes';
 	const isPotato = gang === 'potatoes';
 
+	const buttonTheme = gang === 'potatoes'? 'potatoes': 'tomatoes';
+
 	const titleColor = isPotato ? 'text-yellow-400' : 'text-red-400';
 	const titleGlow = isPotato
 		? 'drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]'
@@ -104,7 +106,8 @@ export function get2FAHtml(data: {
 					${Button({
 						id: "btn-2fa-send",
 						text: "Ativar 2FA",
-						variant: "primary"
+						variant: "primary",
+						theme: buttonTheme
 					})}
 
 					${Button({

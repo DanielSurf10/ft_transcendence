@@ -211,7 +211,7 @@ function setupLoginEvents() {
 					isOnline: true,
 					score: 0,
 					rank: 0,
-					has2FA: true
+					has2FA: false
 				};
 
 				localStorage.setItem('appState', JSON.stringify(state));
