@@ -5,7 +5,7 @@ import fastify, { FastifyReply, FastifyRequest } from 'fastify'
 
 import swaggerPlugin from './plugins/swagger'
 import zodValidator from './plugins/zod-validator'
-import { authRoutes, friendsRoutes } from './routes/auth.routes'
+import { authRoutes, friendsRoutes, leaderboardRoutes } from './routes/auth.routes'
 
 dotenv.config()
 
@@ -47,8 +47,9 @@ app.decorate('verifyUserExists', async function (req: FastifyRequest, reply: Fas
 
 // Rotas
 app.register(zodValidator)
-app.register(authRoutes, { prefix: '/auth'})
-app.register(friendsRoutes, { prefix: '/friends' })
+app.register(authRoutes as any, { prefix: '/auth'})
+app.register(friendsRoutes as any, { prefix: '/friends' })
+app.register(leaderboardRoutes as any, { prefix: '/leaderboards' })
 
 // Rodar
 app.listen({ port: 3333 }).then(() => {

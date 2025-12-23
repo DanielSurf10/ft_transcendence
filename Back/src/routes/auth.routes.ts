@@ -47,6 +47,7 @@ interface User {
 	twoFactorEnabled?: boolean;
 	twoFactorSecret?: string;
 	backupCodes?: string[];
+	score?: number;
 
 	friends: number[];
 	friendRequestsSent: number[];
@@ -74,7 +75,7 @@ function sanitize(user: User) {
 function sanitizeFriends(user: User) {
 	return {
 		id: user.id,
-		name: user.name,
+		nick: user.nick,
 		gang: user.gang,
 		isOnline: true,
 	}
@@ -558,5 +559,33 @@ export async function friendsRoutes(app: FastifyInstance) {
             .map(u => sanitizeRequestsFriends(u))
 
         return reply.send(incomingRequests)
+    })
+}
+
+export async function leaderboardRoutes(app: FastifyInstance) {
+    
+    app.get('/', {
+        onRequest: [app.authenticate]
+    }, async (req, reply) => {
+        
+        const leaderboardData = users.map(u => ({
+            id: u.id,
+            name: u.name,
+            nick: u.nick,
+            avatar: "src/assets/perfil-sla.png",
+            score: u.score || Math.floor(Math.random() * 10000), // Fiz um score aleatorio pra testar
+            gang: u.gang,
+            isOnline: true,
+            rank: 0
+        }));
+
+        // Ordenando score
+        leaderboardData.sort((a, b) => b.score - a.score);
+
+        leaderboardData.forEach((user, index) => {
+            user.rank = index + 1;
+        });
+
+        return reply.send(leaderboardData);
     })
 }
