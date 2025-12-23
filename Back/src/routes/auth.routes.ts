@@ -26,6 +26,7 @@ import {
 	login2FARouteSchema,
 	setup2FARouteSchema
 } from '../schemas/swagger/2fa.schemas'
+import { friendsListRouteSchema, getUserByIdRouteSchema, removeFriendRouteSchema, respondFriendRequestRouteSchema, sendFriendRequestRouteSchema } from '../schemas/swagger/friends.route.schemas'
 import {
 	anonymousRouteSchema,
 	loginRouteSchema,
@@ -33,7 +34,6 @@ import {
 	meRouteSchema,
 	registerRouteSchema
 } from '../schemas/swagger/route.schemas'
-import { friendsListRouteSchema, getUserByIdRouteSchema, removeFriendRouteSchema, respondFriendRequestRouteSchema, sendFriendRequestRouteSchema } from '../schemas/swagger/friends.route.schemas'
 
 interface User {
 	id: number;
@@ -68,6 +68,15 @@ function sanitize(user: User) {
 		isAnonymous: user.isAnonymous,
 		gang: user.gang,
 		// friends: user.friends
+	}
+}
+
+function sanitizeFriends(user: User) {
+	return {
+		id: user.id,
+		name: user.name,
+		gang: user.gang,
+		isOnline: true,
 	}
 }
 
@@ -421,7 +430,7 @@ export async function friendsRoutes(app: FastifyInstance) {
 
 		const myFriends = users
 			.filter(u => currentUser.friends.includes(u.id))
-			.map(u => sanitize(u))
+			.map(u => sanitizeFriends(u))
 
 		return reply.send(myFriends)
 	})
@@ -490,7 +499,7 @@ export async function friendsRoutes(app: FastifyInstance) {
 		}
 
 		if (!currentUser.friendRequestsReceived.includes(requester.id)) {
-			return reply.code(400).send({ error: 'Não há solicitação pendente deste usuário' })
+			return reply.code(400).send({ error: 'Não  há solicitação pendente deste usuário' })
 		}
 
 		currentUser.friendRequestsReceived = currentUser.friendRequestsReceived.filter(id => id !== requester.id)

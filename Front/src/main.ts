@@ -1,14 +1,14 @@
-import { api } from './services/api';
 import './style.css';
 import { showModal } from './utils/modalManager';
 import { getDashboardHtml } from './views/dashboard';
 import { getFriendsHtml } from './views/friends';
 import { getRankingHtml } from './views/ranking';
 
+import { authService } from './services/authRoutes';
+import { friendsService } from './services/friendsRoutes';
 import { getLoginHtml } from './views/login';
 import { getProfileHtml } from './views/profile';
 import { getRegisterHtml, updateRegisterBg } from './views/register';
-import { authService } from './services/authRoutes';
 
 type Route = 'login' | 'register' | '2fa' | 'dashboard' | 'game' | 'profile' | 'friends' | 'leaderboard';
 
@@ -63,7 +63,7 @@ function navigateTo(route: Route, addToHistory = true) {
 	renderView(route);
 }
 
-function renderView(route: Route) {
+async function renderView(route: Route) {
 	switch (route) {
 		case 'login':
 			if (state.isAuthenticated) {
@@ -127,8 +127,8 @@ function renderView(route: Route) {
 				return;
 			}
 
-			app.innerHTML = getFriendsHtml()
-			setupFriendsEvents();
+			app.innerHTML = await getFriendsHtml()
+			await setupFriendsEvents();
 
 			break;
 
@@ -385,6 +385,35 @@ function setupProfileEvents() {
 function setupFriendsEvents() {
 	document.getElementById('btn-friends-back')?.addEventListener('click', () => {
 		navigateTo('dashboard');
+	})
+
+	document.getElementById('btn-friends-add')?.addEventListener('click', async () => {
+		const nick = (document.getElementById('input-friends-add') as HTMLInputElement).value;
+
+		if (nick) {
+			try {
+				await friendsService.sendFriendRequest({
+					nick
+				})
+
+				showModal({
+					title: "Convite enviado!",
+					message: `O pedido de amizade para ${nick} foi enviado`,
+					type: "success",
+					confirmText: "OK"
+				});
+			} catch (e: any) {
+				console.error('Erro capturado:', e);
+                const errorMessage = e.message || e.response?.data?.error || `Não foi possível convidar ${nick}`;
+
+                showModal({
+                    title: "Erro no pedido",
+                    message: errorMessage,
+                    type: "danger",
+                    confirmText: "Tentar novamente"
+                });
+            }
+		}
 	})
 }
 

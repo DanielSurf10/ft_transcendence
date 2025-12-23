@@ -30,18 +30,19 @@ async function fetchWrapper<T>(endpoint: string, options: RequestOptions = {}): 
 	console.log(url);
 	console.log(config);
 
-	try {
+	// try {
 		const response = await fetch(url, config);
 
 		if (!response.ok) {
 			const errorBody = await response.json().catch(() => ({}));
-			throw new Error(errorBody.message || `Erro HTTP: ${errorBody.status}`);
+			throw new Error(errorBody.error || `Erro HTTP: ${errorBody.status}`);
 		}
 
 		return await response.json();
-	} catch (error) {
-		throw error;
-	}
+	// } 
+	// catch (error) {
+	// 	throw error;
+	// }
 }
 
 export const api = {

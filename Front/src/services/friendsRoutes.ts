@@ -18,13 +18,15 @@ interface UserResponse {
 	gang: 'potatoes' | 'tomatoes';
 }
 
-interface FriendsListResponse {
+export interface FriendsListResponse {
 	id: number;
 	name: string;
 	nick: string;
 	email?: string;
 	isAnonymous: boolean;
 	gang: 'potatoes' | 'tomatoes';
+	isOnline: boolean;
+	avatar: string;
 }
 
 interface FriendRequestResponse {

@@ -1,6 +1,8 @@
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { state } from "@/main";
+import { friendsService, type FriendsListResponse } from "@/services/friendsRoutes";
+
 
 // Interface para tipagem
 interface Friend {
@@ -125,7 +127,7 @@ function renderFriendItem(friend: Friend): string {
 	`;
 }
 
-export function getFriendsHtml() {
+export async function getFriendsHtml() {
 		// Obter gangue do usuário
 	const userGang = state.user?.gang || 'potatoes';
 	const isPotato = userGang === 'potatoes';
@@ -139,14 +141,35 @@ export function getFriendsHtml() {
 	// Background customizável por gangue
 	const backgroundImage = backgroundByGang[userGang];
 
+	let friendsListHtml: string = '';
+	let mappedFriends;
+	let friendCount: Number = 0;
 
+	try {
+		const friendsList = await friendsService.listFriends();
+		mappedFriends = friendsList.map((response: FriendsListResponse): Friend => ({
+			id: response.id,
+			name: response.name,
+			avatar: response.avatar || `src/assets/avatar-onion.png`,
+			isOnline: response.isOnline || false,
+		}));
 
-	const friendsListHtml = mockFriends.length > 0
-		? mockFriends.map(renderFriendItem).join('')
-		: `<div class="flex flex-col items-center justify-center py-12 text-center opacity-60">
-				 <span class="text-4xl mb-4">Forever Alone? 🥔</span>
-				 <p class="text-gray-400 text-lg">Você ainda não tem amigos adicionados.</p>
-			 </div>`;
+		friendCount = mappedFriends.length
+		
+		console.log(mappedFriends)
+
+		friendsListHtml = mappedFriends.length !== 0 
+			? mappedFriends.map(renderFriendItem).join('')
+			: `<div class="flex flex-col items-center justify-center py-12 text-center opacity-60">
+			<span class="text-4xl mb-4">Forever Alone? 🥔</span>
+			<p class="text-gray-400 text-lg">Você ainda não tem amigos adicionados.</p>
+			</div>`;
+
+		console.log(friendsListHtml)
+	} catch (error) {
+		console.error('Erro ao listar amigos:', error);
+	}
+
 
 	const requestsListHtml = mockRequests.length > 0
 		? mockRequests.map(renderRequestItem).join('')
@@ -216,7 +239,7 @@ export function getFriendsHtml() {
 								<span class="text-blue-400">👥</span> Sua Lista
 							</h3>
 							<span class="text-xs font-mono text-cyan-500 bg-cyan-900/30 px-2 py-1 rounded border border-cyan-500/30">
-								${mockFriends.length} / 50
+								${friendCount} / 50
 							</span>
 						</div>
 
