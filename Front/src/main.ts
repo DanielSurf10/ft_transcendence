@@ -403,7 +403,7 @@ function showCopyToast() {
     });
 
     setTimeout(() => {
-        toast.classList.add('translate-y-2', 'opacity-0');
+        toast.classList.add('translate-y-2', 'opacity-0'); // Animação de saída
         setTimeout(() => {
             toast.remove();
         }, 300);
@@ -452,21 +452,22 @@ function formatBackupCodesHtml(codes: string[]): string {
 
 function setup2FAEvents() {
     document.getElementById('btn-2fa-copy')?.addEventListener('click', () => {
-        const secretInput = document.getElementById('input-2fa-secret') as HTMLInputElement;
-        const secret = secretInput.value;
+    const secretInput = document.getElementById('input-2fa-secret') as HTMLInputElement;
+    const secret = secretInput.value;
     
-        navigator.clipboard.writeText(secret).then(() => {
+    navigator.clipboard.writeText(secret).then(() => {
+        showCopyToast();
         
-            const btn = document.getElementById('btn-2fa-copy');
-            if (btn) {
-                const originalText = btn.innerHTML;
-                btn.innerHTML = "✅";
-                setTimeout(() => btn.innerHTML = originalText, 2000);
-            }
-        }).catch(err => {
-            console.error('Falha ao copiar:', err);
-        });
+        const btn = document.getElementById('btn-2fa-copy');
+        if (btn) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "✅";
+            setTimeout(() => btn.innerHTML = originalText, 2000);
+        }
+    }).catch(err => {
+        console.error('Falha ao copiar:', err);
     });
+});
 
     document.getElementById('btn-2fa-back')?.addEventListener('click', () => {
         navigateTo('settings');

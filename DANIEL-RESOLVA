@@ -8,3 +8,9 @@
     O app fica com o fundo azul. blockeando o acesso a página.
     Acredito que seja erro de endereçamento da url. Não tenho certeza
 
+3:
+    Arrumar descrição dos erros para deixar explicito a causa
+    LOGIN - CRIAÇÃO - LOGIN ANONIMO
+
+4: 
+    Refatorar o código para melhorar a legibilidade e evitar repetições

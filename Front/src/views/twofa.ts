@@ -67,24 +67,24 @@ export function get2FAHtml(data: {
 
 					<!-- SECRET -->
 					<div class="mb-6 text-left">
-						<label class="text-xs text-gray-400 font-bold uppercase mb-1 block">
-							Secret
-						</label>
-						<div class="flex items-center gap-2">
-							<input
-								id="input-2fa-secret"
-								type="text"
-								readonly
-								value="${data.secret}"
-								class="flex-1 bg-slate-800/80 text-gray-300 text-sm font-mono px-3 py-2 rounded border border-white/10"
-							/>
-							<button
-								id="btn-2fa-copy"
-								class="text-cyan-400 hover:text-cyan-300 text-sm cursor-pointer"
-								title="Copiar secret"
-							>📋</button>
-						</div>
-					</div>
+                        <label class="text-xs text-gray-400 font-bold uppercase mb-1 block">
+                            Secret
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input
+                                id="input-2fa-secret"
+                                type="text"
+                                readonly
+                                value="${data.secret}"
+                                class="flex-1 bg-slate-800/80 text-gray-300 text-sm font-mono px-3 py-2 rounded border border-white/10 text-center" 
+                            />
+                            <button
+                                id="btn-2fa-copy"
+                                class="text-cyan-400 hover:text-cyan-300 text-sm cursor-pointer"
+                                title="Copiar secret"
+                            >📋</button>
+                        </div>
+                    </div>
 
 					<!-- TOKEN -->
 					<div class="mb-6">
