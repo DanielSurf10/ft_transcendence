@@ -57,8 +57,53 @@ interface User {
 const ANONYMOUS_INACTIVITY_TIMEOUT	= 5 * 60 * 1000	// 5 minutos de inatividade
 const CLEANUP_INTERVAL				= 1 * 60 * 1000	// A cada 1 minuto
 
-const	users: User[] = []
-let		nextId = 1
+
+// DADOS MOCKADOS PARA TESTE - APAGAR DEPOIS
+const	users: User[] = [
+	// {
+    //     id: 1,
+    //     name: 'batata',
+    //     nick: 'batata',
+    //     email: 'batata@teste.com',
+    //     password: '$2b$10$zyn5MC8ezQtsVR/4NQD6W.fdIfSDC.997KP72mNbq2EjBt.hEnWKe',
+    //     isAnonymous: false,
+    //     gang: 'potatoes',
+    //     friends: [],
+    //     friendRequestsSent: [],
+    //     friendRequestsReceived: [],
+    //     score: 5000,
+    //     lastActivity: Date.now()
+    // },
+    // {
+    //     id: 2,
+    //     name: 'tomate',
+    //     nick: 'tomate',
+    //     email: 'tomate@teste.com',
+    //     password: '$2b$10$zyn5MC8ezQtsVR/4NQD6W.fdIfSDC.997KP72mNbq2EjBt.hEnWKe',
+    //     isAnonymous: false,
+    //     gang: 'tomatoes',
+    //     friends: [],
+    //     friendRequestsSent: [],
+    //     friendRequestsReceived: [],
+    //     score: 4500,
+    //     lastActivity: Date.now()
+    // },
+    // {
+    //     id: 3,
+    //     name: 'Dev Teste',
+    //     nick: 'dev',
+    //     email: 'dev@teste.com',
+    //     password: '$2b$10$zyn5MC8ezQtsVR/4NQD6W.fdIfSDC.997KP72mNbq2EjBt.hEnWKe',
+    //     isAnonymous: false,
+    //     gang: 'potatoes',
+    //     friends: [],
+    //     friendRequestsSent: [],
+    //     friendRequestsReceived: [],
+    //     score: 100,
+    //     lastActivity: Date.now()
+    // }
+]
+let		nextId = 4
 
 function sanitize(user: User) {
 	return {
@@ -174,7 +219,7 @@ export async function authRoutes(app: FastifyInstance) {
 		}
 		users.push(user)
 
-		console.log(`${name} se cadastrou`)
+		console.log(`${passwordHash}`)
 
 		return (sanitize(user))
 	})
@@ -389,10 +434,11 @@ export async function authRoutes(app: FastifyInstance) {
 			return (reply.code(400).send({ error: '2FA não está habilitado' }))
 		}
 
-		const isValid = authenticator.verify({
-			token,
-			secret: user.twoFactorSecret
-		})
+		let isValid = authenticator.check(token, user.twoFactorSecret)
+		if (!isValid && user.backupCodes?.includes(token)) {
+			user.backupCodes = user.backupCodes.filter(code => code !== token)
+			isValid = true
+		}
 		if (!isValid) {
 			return (reply.code(400).send({ error: 'Token inválido' }))
 		}

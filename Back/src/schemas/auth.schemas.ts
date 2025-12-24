@@ -58,7 +58,17 @@ export const enable2FASchema = z.object({
 })
 
 export const disable2FASchema = z.object({
-	token: tokenValidation
+	token: z.string()
+		.refine(
+			(val) => {
+				const isTOTP = /^\d{6}$/.test(val)
+				const isBackupCode = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(val)
+				return isTOTP || isBackupCode
+			},
+			{
+				message: 'Token deve ser um código de 6 dígitos ou um backup code (formato: XXXX-XXXX)'
+			}
+		)
 })
 
 export const login2FASchema = z.object({
