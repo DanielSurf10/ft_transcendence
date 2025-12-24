@@ -12,6 +12,7 @@ export function get2FAHtml(data: {
 	qrCodeUrl: string;
 	secret: string;
 }) {
+	console.log(data.secret)
 	const user = state.user;
 	const gang = user?.gang || 'potatoes';
 	const isPotato = gang === 'potatoes';
@@ -79,7 +80,7 @@ export function get2FAHtml(data: {
 							/>
 							<button
 								id="btn-2fa-copy"
-								class="text-cyan-400 hover:text-cyan-300 text-sm"
+								class="text-cyan-400 hover:text-cyan-300 text-sm cursor-pointer"
 								title="Copiar secret"
 							>📋</button>
 						</div>

@@ -37,6 +37,7 @@ interface UserResponse {
 	email?: string;
 	isAnonymous: boolean;
 	gang: 'potatoes' | 'tomatoes';
+	has2FA: boolean;
 }
 
 interface LoginResponse {
@@ -85,8 +86,18 @@ export const authService = {
 	login: (data: LoginPayload): Promise<LoginResponse> =>
 		api.post<LoginResponse>("/auth/login", data),
 
-	login2FA: (data: Login2FAPayload): Promise<LoginResponse> =>
-		api.post<LoginResponse>("/auth/login/2fa", data),
+	login2FA: (data: Login2FAPayload): Promise<LoginResponse> => {
+        // 1. Pegamos o token temporário explicitamente
+        const tempToken = localStorage.getItem('tempToken');
+        
+        // 2. Passamos ele no terceiro argumento (options) que criamos no api.ts
+        return api.post<LoginResponse>("/auth/login/2fa", data, {
+            headers: {
+                // Isso vai sobrescrever a lógica padrão e usar o tempToken
+                Authorization: `Bearer ${tempToken}` 
+            }
+        });
+    },
 
 	createAnonymous: (data: AnonymousPayload): Promise<AnonymousResponse> =>
 		api.post<AnonymousResponse>("/auth/anonymous", data),

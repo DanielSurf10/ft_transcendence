@@ -7,14 +7,14 @@ import { friendsService, type FriendsListResponse } from "@/services/friendsRout
 // Interface para tipagem
 interface Friend {
 	id: number;
-	name: string;
+	nick: string;
 	avatar: string;
 	isOnline: boolean;
 }
 
 interface FriendRequest {
 	id: number;
-	name: string;
+	nick: string;
 	avatar: string;
 }
 
@@ -24,28 +24,19 @@ const backgroundByGang = {
 	tomatoes: 'src/assets/bg-login-tomatoes.png',
 };
 
-const mockRequests: FriendRequest[] = [
-	{ id: 102, name: "Dr_Brocolis_O_Destruidor_De_Mundos", avatar: "src/assets/avatar-broc.png" },
-	{ id: 101, name: "Cebola_Chorona", avatar: "src/assets/avatar-onion.png" },
-	{ id: 105, name: "Capim_maluco", avatar: "src/assets/avatar-broc.png" },
-	{ id: 106, name: "Maca_doida", avatar: "src/assets/avatar-broc.png" },
-	{ id: 107, name: "jogador_lol", avatar: "src/assets/avatar-broc.png" },
-	{ id: 108, name: "amor_alucinante", avatar: "src/assets/avatar-broc.png" },
-];
-
-function formatName(name: string): string {
-	if (name.length <= 20) return name;
-	return name.substring(0, 20) + '...';
+function formatNick(nick: string): string {
+	if (nick.length <= 20) return nick;
+	return nick.substring(0, 20) + '...';
 }
 
 function renderRequestItem(request: any): string {
-    const displayNick = formatName(request.nick);
+    const displayNick = formatNick(request.nick);
 
     return `
         <div class="flex items-center justify-between p-3 bg-black/20 rounded-lg border border-white/5 mb-2 w-full">
             <div class="flex items-center gap-3 min-w-0 overflow-hidden mr-2">
                 <div class="w-8 h-8 shrink-0 rounded-full bg-slate-700 overflow-hidden border border-white/10">
-                    <img src="${request.avatar}" alt="${request.nick}" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=${request.name}&background=random'"/>
+                    <img src="${request.avatar}" alt="${request.nick}" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?nick=${request.nick}&background=random'"/>
                 </div>
                 <span class="text-sm text-gray-200 font-bold whitespace-nowrap">
                     ${displayNick}
@@ -82,13 +73,13 @@ function renderFriendItem(friend: Friend): string {
 			<div class="flex items-center gap-4">
 				<div class="relative">
 					<div class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden border-2 border-white/10">
-						<img src="${friend.avatar}" alt="${friend.name}" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=${friend.name}&background=random'"/>
+						<img src="${friend.avatar}" alt="${friend.nick}" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?nick=${friend.nick}&background=random'"/>
 					</div>
 					<div class="absolute bottom-0 right-0 w-3.5 h-3.5 ${statusColor} rounded-full border-2 border-slate-900" title="${statusText}"></div>
 				</div>
 
 				<div class="flex flex-col">
-					<span class="text-white font-bold tracking-wide">${friend.name}</span>
+					<span class="text-white font-bold tracking-wide">${friend.nick}</span>
 					<span class="text-xs ${friend.isOnline ? "text-green-400" : "text-gray-400"} uppercase font-semibold tracking-wider">
 						${statusText}
 					</span>
@@ -102,7 +93,7 @@ function renderFriendItem(friend: Friend): string {
 					variant: "ghost",
 					icon: "trash",
 					className: "btn-friend-remove",
-					attributes: `data-id="${friend.id}" data-name="${friend.name}"`
+					attributes: `data-id="${friend.id}" data-name="${friend.nick}"`
 				})}
 			</div>
 		</div>
@@ -125,21 +116,21 @@ export async function getFriendsHtml() {
 
 	let friendsListHtml: string = '';
 	let mappedFriends;
-	let friendCount: Number = 0;
-	let requestscount: Number = 0;
+	let friendCount: number = 0;
+	let requestscount: number = 0;
 
 	try {
 		const friendsList = await friendsService.listFriends();
 		mappedFriends = friendsList.map((response: FriendsListResponse): Friend => ({
 			id: response.id,
-			name: response.name,
+			nick: response.nick,
 			avatar: response.avatar || `src/assets/avatar-onion.png`,
 			isOnline: response.isOnline || false,
 		}));
 
 		friendCount = mappedFriends.length
 		
-		console.log(mappedFriends)
+		// console.log(mappedFriends)
 
 		friendsListHtml = mappedFriends.length !== 0 
 			? mappedFriends.map(renderFriendItem).join('')
@@ -148,7 +139,7 @@ export async function getFriendsHtml() {
 			<p class="text-gray-400 text-lg">Você ainda não tem amigos adicionados.</p>
 			</div>`;
 
-		console.log(friendsListHtml)
+		console.log('EUUUU: ' + friendsListHtml)
 	} catch (error) {
 		console.error('Erro ao listar amigos:', error);
 	}
@@ -194,12 +185,12 @@ export async function getFriendsHtml() {
 						<h3 class="text-lg md:text-xl text-white font-bold mb-3 md:mb-4 flex items-center gap-2">
 							<span class="text-yellow-400">⚡</span> Adicionar
 						</h3>
-						<p class="text-gray-400 text-xs md:text-sm mb-3 md:mb-4">Busque pelo nome exato para enviar um convite.</p>
+						<p class="text-gray-400 text-xs md:text-sm mb-3 md:mb-4">Busque pelo nick exato para enviar um convite.</p>
 
 						<div class="flex flex-col gap-3 md:gap-4">
 							${Input({
 								id: "input-friends-add",
-								placeholder: "Nome do usuário...",
+								placeholder: "Nick do usuário...",
 								type: "text"
 							})}
 

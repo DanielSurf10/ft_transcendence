@@ -4,6 +4,7 @@ import { getDashboardHtml } from './views/dashboard';
 import { getFriendsHtml } from './views/friends';
 import { getRankingHtml } from './views/ranking';
 import { get2FAHtml } from './views/twofa';
+import { getLogin2FAHtml } from './views/login2fa';
 
 import { authService } from './services/authRoutes';
 import { friendsService } from './services/friendsRoutes';
@@ -13,7 +14,7 @@ import { getRegisterHtml, updateRegisterBg } from './views/register';
 import { getSettingsHtml } from './views/settings';
 import { get2FADisableHtml } from './views/twofaDisable';
 
-type Route = 'login' | 'register' | '2fa' | '2fa-disable' | 'dashboard' | 'game' | 'profile' | 'friends' | 'leaderboard' | 'settings';
+type Route = 'login' | 'register' | '2fa' | '2fa-disable' | 'dashboard' | 'game' | 'profile' | 'friends' | 'leaderboard' | 'settings'| 'login2fa';
 
 export interface User {
 	id: number;
@@ -79,6 +80,15 @@ async function renderView(route: Route) {
 			setupLoginEvents();
 			break;
 
+		case 'login2fa':
+			if (!localStorage.getItem('tempToken')) {
+                navigateTo('login', false);
+                return;
+            }
+            app.innerHTML = getLogin2FAHtml();
+            setupLogin2FAEvents();
+            break;
+
 		case 'register':
 			if (state.isAuthenticated) {
 				navigateTo('dashboard', false);
@@ -89,21 +99,28 @@ async function renderView(route: Route) {
 			break;
 
 		case '2fa':
-			app.innerHTML = get2FAHtml({
-				qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/demo',
-				secret: 'ABCD-EFGH-IJKL'
-			});
-			setup2FAEvents();
-			break;
+			document.getElementById('btn-settings-2fa-enable')?.addEventListener('click', async () => {
+				try {
+					const response = await authService.setup2FA();
+					console.log(response)
 
-/* 		case '2fa':
-			if (!state.isAuthenticated) {
-				navigateTo('login', false);
-				return;
-			}
-			app.innerHTML = get2FAHtml();
-			setup2faEvents();
-			break; */
+					app.innerHTML = get2FAHtml({
+						qrCodeUrl: response.qrcode,
+						secret: response.secret
+					});
+					setup2FAEvents();
+
+				} catch (error: any) {
+					showModal({
+						title: "Erro",
+						message: error.message || "Não foi possível ativar os dois fatores",
+						type: "danger",
+						confirmText: "Tentar novamente",
+					});
+					return ;
+				}
+			});
+			break;
 
 		case '2fa-disable':
 			app.innerHTML = get2FADisableHtml();
@@ -164,8 +181,8 @@ async function renderView(route: Route) {
 				});
 				return;
 			}
-			app.innerHTML = getRankingHtml();
-			setupRankingEvents();
+			app.innerHTML = await getRankingHtml();
+			setupRankingEvents(navigateTo);
 
 			break;
 
@@ -218,27 +235,45 @@ function setupLoginEvents() {
 					password: passInput
 				});
 
-				localStorage.setItem('token', response.token);
+                if (response.requires2FA && response.tempToken) {
+                    console.log("TEMP TOKEN: " + response.tempToken)
+                    localStorage.setItem('tempToken', response.tempToken);
+                    
+                    state.user = {
+						id: 0, // Placeholder
+                        name: '',
+                        nick: '',
+                        isAnonymous: false,
+                        score: 0,
+                        rank: 0,
+                        isOnline: false,
+                        has2FA: true,
+                        gang: 'potatoes' // Pega do response ou default
+                    };
+                    
+                    // 3. Navega para a tela de input do código
+                    navigateTo('login2fa');
+                    return;
+                }
+                // ---------------------------
 
-				state.isAuthenticated = true;
-				state.user = {
-					id: response.user.id,
-					name: response.user.name,
-					nick: response.user.nick,
-					gang: response.user.gang,
-					isAnonymous: response.user.isAnonymous,
-					// isOnline: response.user.isOnline,
-					// score: response.user.score,
-					// rank: response.user.rank
-					// Puxar dados do back end
-					isOnline: true,
-					score: 0,
-					rank: 0,
-					has2FA: true
-				};
+                // Fluxo normal (sem 2FA)
+                localStorage.setItem('token', response.token);
+                state.isAuthenticated = true;
+                state.user = {
+                    id: response.user.id,
+                    name: response.user.name,
+                    nick: response.user.nick,
+                    gang: response.user.gang,
+                    isAnonymous: response.user.isAnonymous,
+                    isOnline: true,
+                    score: 0,
+                    rank: 0,
+                    has2FA: response.user.has2FA
+                };
 
-				localStorage.setItem('appState', JSON.stringify(state));
-				navigateTo('dashboard');
+                localStorage.setItem('appState', JSON.stringify(state));
+                navigateTo('dashboard');
 
 			} catch (error) {
 				showModal({
@@ -276,7 +311,8 @@ function setupLoginEvents() {
 					// Puxar dados do back end
 					isOnline: true,
 					score: 0,
-					rank: 0
+					rank: 0,
+					has2FA: response.user.has2FA
 				};
 				localStorage.setItem('appState', JSON.stringify(state));
 				navigateTo('dashboard');
@@ -347,17 +383,61 @@ export function setupRegisterEvents() {
 	document.getElementById('select-register-gang')?.addEventListener('change', updateRegisterBg);
 }
 
+
+
+function showCopyToast() {
+    const toast = document.createElement('div');
+    toast.innerText = "Copiado!";
+    
+    toast.className = `
+        fixed bottom-10 left-1/2 -translate-x-1/2
+        bg-emerald-600 text-white text-xs font-bold
+        px-4 py-2 rounded-full shadow-lg
+        transform transition-all duration-300 ease-out
+        translate-y-2 opacity-0
+        z-50
+    `;
+
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+    });
+
+    setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 2000);
+}
+
 function setup2FAEvents() {
 	document.getElementById('btn-2fa-copy')?.addEventListener('click', () => {
-		const secret = (document.getElementById('input-2fa-secret') as HTMLInputElement).value;
-		navigator.clipboard.writeText(secret);
+	    const secretInput = document.getElementById('input-2fa-secret') as HTMLInputElement;
+	    const secret = secretInput.value;
+	
+	    navigator.clipboard.writeText(secret).then(() => {
+	        showCopyToast();
+		
+	        const btn = document.getElementById('btn-2fa-copy');
+	        if (btn) {
+	            const originalText = btn.innerHTML;
+	            btn.innerHTML = "✅";
+	            setTimeout(() => btn.innerHTML = originalText, 2000);
+	        }
+	    }).catch(err => {
+	        console.error('Falha ao copiar:', err);
+	    });
 	});
 
 	document.getElementById('btn-2fa-send')?.addEventListener('click', async () => {
 		const tokenInput = document.getElementById('input-2fa-code') as HTMLInputElement;
-		const token = tokenInput.value.replace(/\s/g, '');
+		const tokenValue = tokenInput.value.replace(/\s/g, '');
+		const secretCode = (document.getElementById('input-2fa-secret')as HTMLInputElement).value;
+		console.log("Secret: " + secretCode)
 
-		if (token.length !== 6) {
+		if (tokenValue.length !== 6) {
 			showModal({
 				title: "Código inválido",
 				message: "O código deve conter exatamente 6 dígitos.",
@@ -368,28 +448,40 @@ function setup2FAEvents() {
 		}
 
 		try {
-			// 🔐 Chamada real do backend (exemplo)
-			// await authService.enable2FA({ token });
 
-			// ✅ Sucesso
+			const response = await authService.enable2FA({
+				token: tokenValue,
+				secret: secretCode,
+			});
+		
+		if (response.message === '2FA habilitado com sucesso') {
+
+			if (state.user) {
+				state.user.has2FA = true;
+			}
+			// Precisa salvar os codigos de Backup?
 			showModal({
-				title: "2FA Ativado",
-				message: "A autenticação em dois fatores foi ativada com sucesso.",
+				title: "2FA habilitado com sucesso",
+				message: Array.isArray(response.backupCodes) ? response.backupCodes.join('\n') : response.backupCodes,
 				type: "success",
-				confirmText: "Voltar ao Dashboard",
-				onConfirm: () => {
-					navigateTo('dashboard');
-				}
+				confirmText: "OK",
 			});
 
-		} catch (error) {
-			// ❌ Erro
+			navigateTo("settings")
+			
+		}
+
+
+
+		} catch (error : any) {
 			showModal({
 				title: "Falha ao ativar 2FA",
-				message: "Não foi possível validar o código. Verifique o token e tente novamente.",
+				message: error.message || "Não foi possível validar o código",
 				type: "danger",
-				confirmText: "Tentar novamente"
+				confirmText: "Tentar novamente",
 			});
+			return ;
+			
 		}
 	});
 
@@ -403,20 +495,10 @@ function setup2FADisableEvents() {
 	const cancelBtn = document.getElementById("btn-2fa-disable-cancel") as HTMLButtonElement;
 
 	confirmBtn?.addEventListener("click", async () => {
-		const password = (document.getElementById("input-2fa-disable-password") as HTMLInputElement)?.value;
-		const token = (document.getElementById("input-2fa-disable-token") as HTMLInputElement)?.value;
+		const tokenValue = (document.getElementById("input-2fa-disable-token") as HTMLInputElement)?.value;
 
-		// Validações básicas (frontend)
-		if (!password || password.length < 4) {
-			showModal({
-				title: "Senha inválida",
-				message: "Informe sua senha corretamente.",
-				type: "danger"
-			});
-			return;
-		}
 
-		if (!token || token.length !== 6) {
+		if (!tokenValue || tokenValue.length !== 6) {
 			showModal({
 				title: "Código inválido",
 				message: "Informe o código de 6 dígitos do autenticador.",
@@ -425,28 +507,65 @@ function setup2FADisableEvents() {
 			return;
 		}
 
+		try {
+
+			const response = await authService.disable2FA({
+				token: tokenValue,
+			});
+		
+		if (response.message === '2FA desabilitado com sucesso') {
+
+			if (state.user) {
+				state.user.has2FA = false;
+				// localStorage.setItem("appState", JSON.stringify(state)); Precisa disso???
+			}
+
+			showModal({
+				title: "2FA desabilitado com sucesso",
+				type: "success",
+				message: "",
+				confirmText: "OK",
+			});
+
+			navigateTo("settings")
+			
+		}
+
+		} catch (error : any) {
+			showModal({
+				title: "Falha ao desativar 2FA",
+				message: error.message || "Não foi possível validar o código",
+				type: "danger",
+				confirmText: "Tentar novamente",
+			});
+			return ;
+			
+		}
+	});
+
+
 		// 🔐 Simulação de validação OK
 		// (no futuro: backend valida senha + token)
 
-		confirmBtn.disabled = true;
-		confirmBtn.textContent = "Desativando...";
+// 		confirmBtn.disabled = true;
+// 		confirmBtn.textContent = "Desativando...";
 
-		// Atualiza estado
-		if (state.user) {
-			state.user.has2FA = false;
-			localStorage.setItem("appState", JSON.stringify(state));
-		}
+// 		// Atualiza estado
+// 		if (state.user) {
+// 			state.user.has2FA = false;
+// 			localStorage.setItem("appState", JSON.stringify(state));
+// 		}
 
-		showModal({
-			title: "2FA desativado",
-			message: "A autenticação em duas etapas foi desativada com sucesso.",
-			type: "success",
-			confirmText: "Voltar às configurações",
-			onConfirm: () => {
-				navigateTo("settings");
-			}
-		});
-	});
+// 		showModal({
+// 			title: "2FA desativado",
+// 			message: "A autenticação em duas etapas foi desativada com sucesso.",
+// 			type: "success",
+// 			confirmText: "Voltar às configurações",
+// 			onConfirm: () => {
+// 				navigateTo("settings");
+// 			}
+// 		});
+// 	});
 
 	cancelBtn?.addEventListener("click", () => {
 		navigateTo("settings");
@@ -491,26 +610,6 @@ function setupDashboardEvents() {
 		document.getElementById('btn-dashboard-leaderboard')?.addEventListener('click', () => {
 		navigateTo('leaderboard');
 	})
-/* 
-		document.getElementById('btn-dashboard-2FA')?.addEventListener('click', () => {
-
-			const has2FA = state.user?.has2FA ?? false;
-
-			// 🔐 2FA já ativado → apenas informa
-			if (has2FA) {
-				showModal({
-					title: "2FA já configurado",
-					message: "A autenticação em duas etapas já está ativa nesta conta. Sua segurança está reforçada.",
-					type: "success",
-					confirmText: "Entendi"
-				});
-				return;
-			}
-		
-			// 🔓 2FA desativado → vai para setup
-			navigateTo('2fa');
-	}) */
-
 		document.getElementById('btn-dashboard-config')?.addEventListener('click', () => {
 				navigateTo('settings');
 	});
@@ -661,12 +760,6 @@ function setupFriendsEvents() {
     });
 }
 
-function setupRankingEvents() {
-	document.getElementById('btn-ranking-back')?.addEventListener('click', () => {
-		navigateTo('dashboard');
-	})
-}
-
 function setupSettingsEvents() {
 	document.getElementById('btn-settings-back')?.addEventListener('click', () => {
 		navigateTo('dashboard');
@@ -690,6 +783,143 @@ function initializeRoute() {
 	}
 
 	navigateTo(initialRoute, false);
+}
+
+function setupRankingEvents(navigateTo: Function) { // Passando navigateTo se necessário, ou importe
+    
+    document.getElementById('btn-ranking-back')?.addEventListener('click', () => {
+        navigateTo('dashboard'); 
+    });
+
+    const container = document.getElementById('ranking-lists-container');
+    if (!container) return;
+
+    container.addEventListener('click', async (e) => {
+        const target = e.target as HTMLElement;
+        
+        // --- ADICIONAR AMIGO ---
+        const addBtn = target.closest('.btn-rank-add') as HTMLElement;
+        if (addBtn) {
+            const nick = addBtn.getAttribute('data-nick');
+            if (nick) {
+                try {
+                    await friendsService.sendFriendRequest({ nick });
+                    showModal({
+                        title: "Sucesso",
+                        message: `Solicitação enviada para ${nick}!`,
+                        type: "success"
+                    });
+                    addBtn.innerHTML = "<span>Enviado</span>";
+                    addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } catch (error: any) {
+                    showModal({
+                        title: "Erro",
+                        message: error.message || "Falha ao enviar solicitação",
+                        type: "danger"
+                    });
+                }
+            }
+        }
+
+        // --- REMOVER AMIGO ---
+        const removeBtn = target.closest('.btn-rank-remove') as HTMLElement;
+        if (removeBtn) {
+            const id = removeBtn.getAttribute('data-id');
+            const nick = removeBtn.getAttribute('data-nick');
+            
+            if (id && nick) {
+                showModal({
+                    title: "Remover Amigo",
+                    message: `Tem certeza que deseja remover ${nick} dos amigos?`,
+                    type: "danger",
+                    confirmText: "Remover",
+                    cancelText: "Cancelar",
+                    onConfirm: async () => {
+                        try {
+                            await friendsService.removeFriend(Number(id));
+                            showModal({
+                                title: "Removido",
+                                message: "Amizade desfeita.",
+                                type: "success",
+                                onConfirm: () => {
+                                    window.location.reload(); 
+                                }
+                            });
+                        } catch (error: any) {
+                            showModal({
+                                title: "Erro",
+                                message: error.message,
+                                type: "danger"
+                            });
+                        }
+                    }
+                });
+            }
+        }
+    });
+}
+
+function setupLogin2FAEvents() {
+    document.getElementById('btn-login-2fa-cancel')?.addEventListener('click', () => {
+        localStorage.removeItem('tempToken');
+        state.user = null;
+        navigateTo('login');
+    });
+
+    document.getElementById('btn-login-2fa-confirm')?.addEventListener('click', async () => {
+        const tokenInput = document.getElementById('input-login-2fa-code') as HTMLInputElement;
+        const code = tokenInput.value.replace(/\s/g, '');
+
+        if (code.length !== 6) {
+            showModal({
+                title: "Código inválido",
+                message: "O código deve ter 6 dígitos.",
+                type: "danger"
+            });
+            return;
+        }
+
+        const tempToken = localStorage.getItem('tempToken');
+        if (!tempToken) {
+            navigateTo('login');
+            return;
+        }
+
+        try {
+            const response = await authService.login2FA({
+                token: code,
+            }); 
+
+            localStorage.setItem('token', response.token);
+            localStorage.removeItem('tempToken');
+
+            state.isAuthenticated = true;
+            state.user = {
+                id: response.user.id,
+                name: response.user.name,
+                nick: response.user.nick,
+                gang: response.user.gang,
+                isAnonymous: response.user.isAnonymous,
+                isOnline: true,
+                score: 0,
+                rank: 0,
+                has2FA: true
+            };
+
+            localStorage.setItem('appState', JSON.stringify(state));
+            navigateTo('dashboard');
+
+        } catch (error: any) {
+            showModal({
+                title: "Acesso Negado",
+                message: error.message || "Código incorreto ou expirado.",
+                type: "danger",
+                confirmText: "Tentar novamente"
+            });
+            tokenInput.value = "";
+            tokenInput.focus();
+        }
+    });
 }
 
 initializeRoute()

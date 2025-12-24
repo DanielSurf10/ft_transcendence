@@ -34,13 +34,14 @@ app.decorate('authenticate', async function (req: FastifyRequest, reply: Fastify
 
 app.decorate('authenticate2FA', async function (req: FastifyRequest, reply: FastifyReply) {
 	try {
-		await req.jwtVerify()
-		if (!req.user.temp2FA) {
-			return reply.code(401).send({ error: 'Token temporário inválido' })
-		}
-	} catch {
-		return reply.code(401).send({ error: 'Token Inválido' })
-	}
+        await req.jwtVerify()
+        if (!req.user.temp2FA) {
+            return reply.code(401).send({ error: 'Token temporário inválido' })
+        }
+    } catch (err) {
+        console.log("Erro no jwtVerify:", err); 
+        return reply.code(401).send({ error: 'Token Inválido' })
+    }
 })
 
 app.decorate('verifyUserExists', async function (req: FastifyRequest, reply: FastifyReply) {})

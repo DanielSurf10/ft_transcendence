@@ -24,12 +24,12 @@ export function get2FADisableHtml() {
 					</h2>
 
 					<p class="text-gray-300 text-md mb-6">
-						Para sua segurança, confirme sua senha para desativar a autenticação em duas etapas.
+						Para continuar, informe o Tokien de 6 dígitos.
 					</p>
 
-                    ${Input({
+					${Input({
                         id: "input-2fa-disable-token",
-                        placeholder: "000 000",
+                        placeholder: "token",
                         className: "text-center tracking-[0.5em] font-mono mb-6"
                     })}
 

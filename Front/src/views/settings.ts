@@ -31,7 +31,7 @@ export function getSettingsHtml() {
 			<!-- Header -->
 			<div class="w-full flex justify-between items-end mb-10 border-b border-white/10 pb-4">
 				<h2 class="${settingsColor} text-5xl font-bold tracking-widest">
-					SETTINGS
+					CONFIGURAÇÕES
 				</h2>
 
 				<button
