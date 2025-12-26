@@ -20,8 +20,8 @@ function sanitizeFriends(user: User) {
         id: user.id,
         nick: user.nick,
         gang: user.gang,
-        isOnline: true,
-        avatar: 'src/assets/perfil-sla.png'
+        isOnline: user.isOnline ?? false, 
+        avatar: user.avatar || 'src/assets/perfil-sla.png' 
     };
 }
 
@@ -29,7 +29,7 @@ function sanitizeRequestsFriends(user: User) {
     return {
         id: user.id,
         nick: user.nick,
-        avatar: 'src/assets/perfil-sla.png'
+        avatar: user.avatar || 'src/assets/perfil-sla.png'
     };
 }
 

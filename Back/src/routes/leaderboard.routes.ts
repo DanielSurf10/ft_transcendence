@@ -13,12 +13,10 @@ export async function leaderboardRoutes(app: FastifyInstance) {
             id: u.id,
             name: u.name,
             nick: u.nick,
-            // Mock de avatar (futuramente virá do banco/upload)
-            avatar: 'src/assets/perfil-sla.png', 
+            avatar: u.avatar || 'src/assets/perfil-sla.png',
             score: u.score || 0, 
             gang: u.gang,
-            // Mock de status (futuramente virá de um sistema de presença/socket)
-            isOnline: true, 
+            isOnline: u.isOnline ?? false,
             rank: 0
         }));
 

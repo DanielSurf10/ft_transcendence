@@ -162,7 +162,7 @@ export async function getRankingHtml() {
     const headerColor = isPotato ? 'text-yellow-400' : 'text-red-400';
     const titleDropShadow = isPotato ? 'drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]';
     const backgroundImage = backgroundByGang[gang] || bgDefault;
-    const avatarSrc = "/assets/perfil-sla.png"; 
+    const avatarSrc = currentUserInRanking?.avatar || user.avatar || "/assets/perfil-sla.png";
 
     return `
         <style>

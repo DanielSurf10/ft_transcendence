@@ -120,8 +120,8 @@ export async function getFriendsHtml() {
         const mappedFriends = friendsList.map((response: FriendsListResponse): Friend => ({
             id: response.id,
             nick: response.nick,
-            avatar: response.avatar || `/assets/avatar-onion.png`,
-            isOnline: response.isOnline || false,
+            avatar: response.avatar || `https://ui-avatars.com/api/?name=${response.nick}&background=random`,
+            isOnline: response.isOnline === true,
         }));
 
         friendCount = mappedFriends.length;
