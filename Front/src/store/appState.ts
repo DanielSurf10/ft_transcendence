@@ -10,7 +10,9 @@ export type Route =
 | 'friends'
 | 'leaderboard'
 | 'settings'
-| 'login2fa';
+| 'login2fa'
+| 'soloIA'
+| 'multiplayer';
 
 export interface User {
     id: number;

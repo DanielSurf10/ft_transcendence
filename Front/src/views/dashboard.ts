@@ -130,11 +130,11 @@ export function setupDashboardEvents(navigate: (route: Route) => void) {
 
 	//NAVEGAÇÃO DOS ITENS DO DASHBOARD
 	document.getElementById('btn-dashboard-multiplayer')?.addEventListener('click', () => {
-		navigate('dashboard');
+		navigate('multiplayer');
 	});
 
 	document.getElementById('btn-dashboard-solo')?.addEventListener('click', () => {
-		navigate('dashboard');
+		navigate('soloIA');
 	});
 
 	document.getElementById('btn-dashboard-profile')?.addEventListener('click', () => {
