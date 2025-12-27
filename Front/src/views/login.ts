@@ -1,9 +1,9 @@
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
-import { state, saveState, type Route } from '../store/appState';
 import { authService } from "@/services/authRoutes";
 import { showModal } from "@/utils/modalManager";
+import { saveState, state, type Route } from '../store/appState';
 
 export function getLoginHtml() {
 	return `
@@ -81,110 +81,110 @@ export function getLoginHtml() {
 }
 
 export function setupLoginEvents(navigate: (route: Route) => void) {
-    
-    // 1. LOGIN DE USUÁRIO
-    document.getElementById('btn-login-user')?.addEventListener('click', async () => {
-        const userInput = (document.getElementById('input-login-user') as HTMLInputElement).value;
-        const passInput = (document.getElementById('input-login-pass') as HTMLInputElement).value;
 
-        if (userInput && passInput) {
-            try {
-                const response = await authService.login({
-                    identifier: userInput,
-                    password: passInput
-                });
+	// 1. LOGIN DE USUÁRIO
+	document.getElementById('btn-login-user')?.addEventListener('click', async () => {
+		const userInput = (document.getElementById('input-login-user') as HTMLInputElement).value;
+		const passInput = (document.getElementById('input-login-pass') as HTMLInputElement).value;
 
-                // Verifica 2FA
-                if (response.requires2FA && response.tempToken) {
-                    console.log("TEMP TOKEN: " + response.tempToken);
-                    localStorage.setItem('tempToken', response.tempToken);
+		if (userInput && passInput) {
+			try {
+				const response = await authService.login({
+					identifier: userInput,
+					password: passInput
+				});
 
-                    // Preenchemos um user placeholder temporário no estado
-                    state.user = {
-                        id: 0,
-                        name: '',
-                        nick: '',
-                        isAnonymous: false,
-                        score: 0,
-                        rank: 0,
-                        isOnline: false,
-                        has2FA: true,
-                        gang: 'potatoes'
-                    };
+				// Verifica 2FA
+				if (response.requires2FA && response.tempToken) {
+					console.log("TEMP TOKEN: " + response.tempToken);
+					localStorage.setItem('tempToken', response.tempToken);
 
-                    // Usa a função recebida para navegar
-                    navigate('login2fa');
-                    return;
-                }
+					// Preenchemos um user placeholder temporário no estado
+					state.user = {
+						id: 0,
+						name: '',
+						nick: '',
+						isAnonymous: false,
+						score: 0,
+						rank: 0,
+						isOnline: false,
+						has2FA: true,
+						gang: 'potatoes'
+					};
 
-                // Fluxo normal (Login Sucesso)
-                localStorage.setItem('token', response.token);
-                state.isAuthenticated = true;
-                
-                // Atualiza o estado global
-                state.user = {
-                    id: response.user.id,
-                    name: response.user.name,
-                    nick: response.user.nick,
-                    gang: response.user.gang,
-                    isAnonymous: response.user.isAnonymous,
-                    isOnline: true,
-                    score: 0,
-                    rank: 0,
-                    has2FA: response.user.has2FA
-                };
+					// Usa a função recebida para navegar
+					navigate('login2fa');
+					return;
+				}
 
-                saveState(); // Salva no localStorage usando o helper
-                navigate('dashboard');
+				// Fluxo normal (Login Sucesso)
+				localStorage.setItem('token', response.token);
+				state.isAuthenticated = true;
 
-            } catch (error) {
-                showModal({
-                    title: "Erro no login",
-                    message: "Não foi possível realizar o login. Verifique suas credenciais.",
-                    type: "danger",
-                    confirmText: "Tentar novamente"
-                });
-            }
-        }
-    });
+				// Atualiza o estado global
+				state.user = {
+					id: response.user.id,
+					name: response.user.name,
+					nick: response.user.nick,
+					gang: response.user.gang,
+					isAnonymous: response.user.isAnonymous,
+					isOnline: true,
+					score: 0,
+					rank: 0,
+					has2FA: response.user.has2FA
+				};
 
-    // 2. LOGIN DE CONVIDADO (ANÔNIMO)
-    document.getElementById('btn-login-guest')?.addEventListener('click', async () => {
-        const userAnonymous = (document.getElementById('input-login-guest') as HTMLInputElement).value;
+				saveState(); // Salva no localStorage usando o helper
+				navigate('dashboard');
 
-        if (userAnonymous) {
-            try {
-                const response = await authService.createAnonymous({
-                    nick: userAnonymous
-                });
+			} catch (error) {
+				showModal({
+					title: "Erro no login",
+					message: "Não foi possível realizar o login. Verifique suas credenciais.",
+					type: "danger",
+					confirmText: "Tentar novamente"
+				});
+			}
+		}
+	});
 
-                localStorage.setItem('token', response.token);
+	// 2. LOGIN DE CONVIDADO (ANÔNIMO)
+	document.getElementById('btn-login-guest')?.addEventListener('click', async () => {
+		const userAnonymous = (document.getElementById('input-login-guest') as HTMLInputElement).value;
 
-                state.isAuthenticated = true;
-                state.user = {
-                    id: response.user.id,
-                    name: response.user.name,
-                    nick: response.user.nick,
-                    gang: response.user.gang,
-                    isAnonymous: response.user.isAnonymous,
-                    isOnline: true,
-                    score: 0,
-                    rank: 0,
-                    has2FA: response.user.has2FA
-                };
-                
-                saveState(); // Salva estado
-                navigate('dashboard');
+		if (userAnonymous) {
+			try {
+				const response = await authService.createAnonymous({
+					nick: userAnonymous
+				});
 
-            } catch (error) {
-                console.error(error);
-                // Sugestão: Adicione um showModal de erro aqui também
-            }
-        }
-    });
+				localStorage.setItem('token', response.token);
 
-    // 3. BOTÃO DE REGISTRO
-    document.getElementById('btn-register')?.addEventListener('click', () => {
-        navigate('register');
-    });
+				state.isAuthenticated = true;
+				state.user = {
+					id: response.user.id,
+					name: response.user.name,
+					nick: response.user.nick,
+					gang: response.user.gang,
+					isAnonymous: response.user.isAnonymous,
+					isOnline: true,
+					score: 0,
+					rank: 0,
+					has2FA: response.user.has2FA
+				};
+
+				saveState(); // Salva estado
+				navigate('dashboard');
+
+			} catch (error) {
+				console.error(error);
+				// Sugestão: Adicione um showModal de erro aqui também
+			}
+		}
+	});
+
+	// 3. BOTÃO DE REGISTRO
+	document.getElementById('btn-register')?.addEventListener('click', () => {
+		navigate('register');
+	});
 }
