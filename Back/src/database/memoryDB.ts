@@ -16,6 +16,7 @@ export interface User {
     friendRequestsReceived: number[];
     isOnline?: boolean;
     avatar?: string;
+    gameAvatar?: string;
 }
 
 class MemoryDatabase {

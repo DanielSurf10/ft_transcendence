@@ -16,7 +16,9 @@ export interface PlayerState {
   shield: boolean; // Se tem barreira ativada
   skin: PlayerSkin;
   nick: string;    // Nome do jogador para exibir
-  avatarUrl?: string; // URL da foto do jogador
+  avatar?: string; // URL da foto do jogador
+  gameAvatar?: string // Avatar de jogo
+
 }
 
 export interface GameState {

@@ -12,12 +12,15 @@ import {
     Login2FAInput, login2FASchema,
     AnonymousInput, anonymousSchema,
     Enable2FAInput, enable2FASchema,
-    Disable2FAInput, disable2FASchema
+    Disable2FAInput, disable2FASchema,
+    deleteAccountSchema,
+    DeleteAccountInput
 } from '../schemas/auth.schemas';
 
 import {
     registerRouteSchema, loginRouteSchema, login2FARouteSchema,
-    anonymousRouteSchema, meRouteSchema, logoutRouteSchema
+    anonymousRouteSchema, meRouteSchema, logoutRouteSchema,
+    deleteAccountRouteSchema
 } from '../schemas/swagger/route.schemas';
 
 import {
@@ -174,6 +177,48 @@ export async function authRoutes(app: FastifyInstance) {
         }
 
         return reply.code(200).send({ message: 'Logout realizado' });
+    });
+
+    app.delete('/delete', {
+        onRequest: [app.authenticate],
+        schema: deleteAccountRouteSchema,
+        preHandler: app.validateBody(deleteAccountSchema)
+    }, async (req: FastifyRequest, reply) => {
+        const { password, token } = req.body as DeleteAccountInput;
+        
+        const user = await db.findUserById(req.user.id);
+
+        if (!user) {
+            return reply.code(400).send({ error: 'Usuário não encontrado' });
+        }
+
+        if (!user.isAnonymous) {
+            if (!password) {
+                return reply.code(400).send({ error: 'A senha é obrigatória para confirmar a exclusão.' });
+            }
+
+            const isPassValid = await bcrypt.compare(password, user.password!);
+            if (!isPassValid) {
+                return reply.code(400).send({ error: 'Senha incorreta.' });
+            }
+
+            if (user.twoFactorEnabled) {
+                if (!token) {
+                    return reply.code(400).send({ error: 'Token 2FA é obrigatório.' });
+                }
+                
+                const isValidToken = authenticator.check(token, user.twoFactorSecret!);
+                const isBackupCode = !isValidToken && user.backupCodes?.includes(token);
+
+                if (!isValidToken && !isBackupCode) {
+                    return reply.code(400).send({ error: 'Token 2FA inválido.' });
+                }
+            }
+        }
+
+        db.deleteUser(user.id);
+
+        return reply.code(200).send({ message: 'Conta deletada com sucesso.' });
     });
 
     // =========================================================================

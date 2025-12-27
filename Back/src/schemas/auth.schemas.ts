@@ -67,9 +67,15 @@ export const login2FASchema = z.object({
 	token: twoFATokenValidation
 })
 
+export const deleteAccountSchema = z.object({
+    password: z.string().optional(),
+    token: z.string().optional()
+})
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type AnonymousInput = z.infer<typeof anonymousSchema>
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>
 
 export type Enable2FAInput = z.infer<typeof enable2FASchema>
 export type Disable2FAInput = z.infer<typeof disable2FASchema>

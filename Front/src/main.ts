@@ -4,6 +4,7 @@ import { state, type Route } from './store/appState';
 import { authService } from './services/authRoutes';
 import { initGameSocket, disconnectGame } from './services/gameSocket';
 import { showModal } from './utils/modalManager';
+import { GameController } from './views/game';
 
 //Views
 import * as LoginView from './views/login';
@@ -19,11 +20,12 @@ import * as TwoFAView from './views/twofa';
 import * as TwoFADisableView from './views/twofaDisable';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
+let localGameController: GameController | null = null;
 
 // --- NAVEGAÇÃO CENTRAL ---
 function navigateTo(route: Route, addToHistory = true) {
     // Guards de Autenticação
-    const protectedRoutes: Route[] = ['dashboard', 'profile', 'game', 'friends', 'leaderboard', 'settings', '2fa', '2fa-disable'];
+    const protectedRoutes: Route[] = ['dashboard', 'profile', 'game', 'game-solo', 'friends', 'leaderboard', 'settings', '2fa', '2fa-disable'];
     const publicRoutes: Route[] = ['login', 'register', 'login2fa'];
 
     if (protectedRoutes.includes(route) && !state.isAuthenticated) {
@@ -60,6 +62,11 @@ function checkAnonymousAccess(): boolean {
 async function renderView(route: Route) {
     disconnectGame();
 
+    if (localGameController) {
+        localGameController.destroy();
+        localGameController = null;
+    }
+
     switch (route) {
         case 'login':
             app.innerHTML = LoginView.getLoginHtml();
@@ -89,6 +96,11 @@ async function renderView(route: Route) {
             app.innerHTML = GameView.getGameHtml();
             initGameSocket();
              break;
+            
+        case 'game-solo':
+            app.innerHTML = GameView.getGameHtml();
+            localGameController = new GameController({ difficulty: 2 });
+            break;
 
         case 'profile':
             if (checkAnonymousAccess()) return;
@@ -149,7 +161,14 @@ window.addEventListener('popstate', (event) => {
         navigateTo(event.state.route, false);
     } else {
         const path = window.location.hash.replace('#', '') as Route;
-        navigateTo(path || 'login', false);
+        
+        const validRoutes: Route[] = ['login', 'register', 'dashboard', 'game', 'game-solo', 'profile', 'friends', 'leaderboard', 'settings', '2fa', '2fa-disable', 'login2fa'];
+        
+        if (validRoutes.includes(path)) {
+            navigateTo(path, false);
+        } else {
+            navigateTo('login', false);
+        }
     }
 });
 

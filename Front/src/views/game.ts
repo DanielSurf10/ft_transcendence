@@ -1,11 +1,17 @@
 // Front/src/views/game.ts
 import { Button } from "@/components/Button";
 import { Socket } from 'socket.io-client';
+import { LocalGameEngine } from "../game/LocalGameEngine";
 import confetti from 'canvas-confetti';
-
-// Imports de Tipos
-import { PowerUpType } from '../types/game'; 
 import type { GameState } from '../types/game';
+import { PowerUpType } from '../types/game';
+
+import imgRedBall from '../assets/redball.png';
+import imgBlueBall from '../assets/blueball.png';
+
+import bgPotatoes from '../assets/bg-login-potatoes.png';
+import bgTomatoes from '../assets/bg-login-tomatoes.png';
+import bgMixed from '../assets/bg-login-potatoes.png';
 
 // --- 1. A ESTRUTURA HTML (Visual) ---
 export function getGameHtml() {
@@ -28,7 +34,7 @@ export function getGameHtml() {
                     <h1 class="text-3xl text-yellow-500 font-bold drop-shadow-[0_2px_0px_rgba(0,0,0,1)] uppercase tracking-widest mb-2">Potato Pong War</h1>
                     <div class="bg-slate-950/80 border-2 border-orange-500/50 px-10 py-4 rounded-xl backdrop-blur-md shadow-2xl flex items-center gap-6">
                         <span id="p1-score" class="text-5xl font-mono font-bold text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]">0</span>
-                        <img src="/assets/vs_icon.png" class="w-8 h-8 opacity-80" alt="VS"> 
+                        <img src="${imgRedBall}" class="w-8 h-8 opacity-80" alt="VS"> 
                         <span id="p2-score" class="text-5xl font-mono font-bold text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">0</span>
                     </div>
                 </div>
@@ -43,7 +49,7 @@ export function getGameHtml() {
             </div>
 
             <div class="relative z-10">
-                <div class="relative bg-slate-950 rounded-xl border-4 border-slate-700 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                <div class="relative bg-slate-950 rounded-xl border-4 border-slate-700 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-visible">
                     
                     <div id="p1-game-avatar" class="absolute left-[-60px] w-[50px] h-[50px] transition-all duration-75 pointer-events-none z-20">
                          <img id="p1-skin-img" src="" class="w-full h-full drop-shadow-lg filter brightness-110">
@@ -95,20 +101,18 @@ export function getGameHtml() {
 
 // --- 2. A LÓGICA DO JOGO (Controller) ---
 export class GameController {
-    private socket: Socket;
+    private socket: Socket | null = null;
+    private localEngine: LocalGameEngine | null = null;
+    
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
     private animationFrameId: number | null = null;
     
-    // Elementos DOM cacheados
     private els: Record<string, HTMLElement | HTMLImageElement> = {};
     private images: Record<string, HTMLImageElement> = {};
     private gameState: GameState | null = null;
 
-    constructor(socket: Socket) {
-        this.socket = socket;
-        
-        // Inicializa elementos
+    constructor(source: Socket | { difficulty: number }) {
         this.canvas = document.getElementById('pongCanvas') as HTMLCanvasElement;
         if (!this.canvas) throw new Error("Canvas não encontrado no DOM");
         
@@ -116,10 +120,20 @@ export class GameController {
         
         this.cacheElements();
         this.loadAssets();
-        this.setupListeners();
-        this.renderLoop(); // Inicia o loop visual
 
-        // Bind do botão de sair
+        if ('difficulty' in source) {
+            console.log("Iniciando Modo Solo (Local)");
+            this.localEngine = new LocalGameEngine(source.difficulty);
+            this.setupLocalListeners();
+            this.localEngine.start();
+        } else {
+            console.log("Iniciando Modo Multiplayer (Socket)");
+            this.socket = source;
+            this.setupSocketListeners();
+        }
+
+        this.renderLoop();
+
         document.getElementById('btn-quit-game')?.addEventListener('click', () => {
             this.handleQuit();
         });
@@ -141,17 +155,18 @@ export class GameController {
 
     private loadAssets() {
         const assets = {
-            'tomato': '/assets/tomato_skin.png',
-            'potato': '/assets/potato_skin.png',
-            'bg_tomatoes': '/assets/crowd_tomatoes.png',
-            'bg_potatoes': '/assets/crowd_potatoes.png',
-            'bg_mixed': '/assets/crowd_mixed.png',
-            'icon_big': '/assets/powerup_big.png',
-            'icon_shield': '/assets/powerup_shield.png',
-            'icon_speed': '/assets/powerup_speed.png',
+            'tomato': imgRedBall, // Placeholder
+            'potato': imgBlueBall, // Placeholder
+            'bg_tomatoes': bgTomatoes, // Placeholder
+            'bg_potatoes': bgPotatoes, // Placeholder
+            'bg_mixed': bgMixed, // Placeholder
+            'icon_big': imgRedBall,   // Placeholder
+            'icon_shield': imgBlueBall, // Placeholder
+            'icon_speed': imgRedBall,   // Placeholder
         };
 
         Object.entries(assets).forEach(([key, src]) => {
+            if (!src) return;
             const img = new Image();
             img.src = src;
             this.images[key] = img;
@@ -177,89 +192,138 @@ export class GameController {
         if (btn) btn.classList.add('hidden');
     }
 
-    private setupListeners() {
-        // Recebe o estado do jogo (posições)
-        this.socket.on('gameState', (state: GameState) => {
-            this.gameState = state;
-            this.updateUI(state);
-            // Nota: Não chamamos toggleOverlay(false) aqui para respeitar o timer inicial
-        });
+    private onGameState = (state: GameState) => {
+        this.gameState = state;
+        this.updateUI(state);
+    };
 
-        // Gerencia Status da Partida (Waiting, Starting, Playing)
-        this.socket.on('matchStatus', (status: string) => {
-            if (status === 'waiting') {
-                this.showOverlay("Aguardando Oponente...", "Convide um amigo ou aguarde na fila.");
-            } 
-            else if (status.startsWith('starting:')) {
-                const count = status.split(':')[1];
-                this.showOverlay("Prepare-se!", `A partida começa em ${count}...`);
-            }
-            else if (status === 'playing') {
-                this.toggleOverlay(false); // Libera a tela para jogar
-            }
-        });
+    private onMatchStatus = (status: string) => {
+        if (status === 'waiting') {
+            this.showOverlay("Aguardando Oponente...", "Convide um amigo ou aguarde na fila.");
+        } 
+        else if (status.startsWith('starting:')) {
+            const count = status.split(':')[1];
+            this.showOverlay("Prepare-se!", `A partida começa em ${count}...`);
+        }
+        else if (status === 'playing') {
+            this.toggleOverlay(false);
+        }
+    };
 
-        // Confetes no gol
-        this.socket.on('scoreUpdate', (data: { scorer: 'player1' | 'player2' }) => {
-            this.triggerConfetti(data.scorer);
-        });
+    private onScoreUpdate = (data: { scorer: 'player1' | 'player2' }) => {
+        this.triggerConfetti(data.scorer);
+    };
+
+    private onGameOver = (data: { winnerId: string, message: string }) => {
+        this.showGameOver(data);
+    };
+
+    private setupSocketListeners() {
+        if (!this.socket) return;
+        this.socket.on('gameState', this.onGameState);
+        this.socket.on('matchStatus', this.onMatchStatus);
+        this.socket.on('scoreUpdate', this.onScoreUpdate);
+        this.socket.on('gameOver', this.onGameOver);
         
-        // Fim de jogo
-        this.socket.on('gameOver', (data) => this.showGameOver(data));
-        
-        // Inputs
-        window.addEventListener('keydown', this.handleInput);
-        window.addEventListener('keyup', this.handleInputUp);
+        window.addEventListener('keydown', this.handleInputSocket);
+        window.addEventListener('keyup', this.handleInputUpSocket);
     }
 
-    private handleInput = (e: KeyboardEvent) => {
-        if (e.repeat) return; 
+    private setupLocalListeners() {
+        if (!this.localEngine) return;
+        this.localEngine.on('gameState', (_, data) => this.onGameState(data));
+        this.localEngine.on('matchStatus', (_, data) => this.onMatchStatus(data));
+        this.localEngine.on('scoreUpdate', (_, data) => this.onScoreUpdate(data));
+        this.localEngine.on('gameOver', (_, data) => this.onGameOver(data));
+
+        window.addEventListener('keydown', this.handleInputLocal);
+        window.addEventListener('keyup', this.handleInputUpLocal);
+    }
+
+    private handleInputSocket = (e: KeyboardEvent) => {
+        if (e.repeat) return;
         let direction = '';
         if (e.key === 'ArrowUp' || e.key === 'w') direction = 'UP';
         if (e.key === 'ArrowDown' || e.key === 's') direction = 'DOWN';
-        
-        if (direction) this.socket.emit('movePaddle', { direction });
+        if (direction && this.socket) this.socket.emit('movePaddle', { direction });
     };
 
-    private handleInputUp = (e: KeyboardEvent) => {
-        if (['ArrowUp', 'w', 'ArrowDown', 's'].includes(e.key)) {
+    private handleInputUpSocket = (e: KeyboardEvent) => {
+        if (['ArrowUp', 'w', 'ArrowDown', 's'].includes(e.key) && this.socket) {
              this.socket.emit('movePaddle', { direction: 'STOP' });
         }
     };
 
+    private handleInputLocal = (e: KeyboardEvent) => {
+        if (e.repeat) return;
+        let direction: 'UP' | 'DOWN' | '' = '';
+        if (e.key === 'ArrowUp' || e.key === 'w') direction = 'UP';
+        if (e.key === 'ArrowDown' || e.key === 's') direction = 'DOWN';
+        if (direction && this.localEngine) this.localEngine.movePaddle(direction);
+    };
+
+    private handleInputUpLocal = (e: KeyboardEvent) => {
+        if (['ArrowUp', 'w', 'ArrowDown', 's'].includes(e.key) && this.localEngine) {
+             this.localEngine.movePaddle('STOP');
+        }
+    };
+
     private updateUI(state: GameState) {
+        // --- 1. Atualizar Textos e Nicks ---
         if (this.els['p1-score']) this.els['p1-score'].innerText = state.player1.score.toString();
         if (this.els['p2-score']) this.els['p2-score'].innerText = state.player2.score.toString();
         if (this.els['p1-nick']) this.els['p1-nick'].innerText = state.player1.nick;
         if (this.els['p2-nick']) this.els['p2-nick'].innerText = state.player2.nick;
 
-        const bgKey = this.getBgKey(state.player1.skin, state.player2.skin);
-        if (this.images[bgKey] && this.els['stadium-bg']) {
-             this.els['stadium-bg'].style.backgroundImage = `url(${this.images[bgKey].src})`;
+        if (this.els['p1-photo']) {
+            const el = this.els['p1-photo'] as HTMLImageElement;
+            const src = state.player1.avatar || imgRedBall;
+            if (el.src !== src) el.src = src;
+        }
+        
+        if (this.els['p2-photo']) {
+            const el = this.els['p2-photo'] as HTMLImageElement;
+            const src = state.player2.avatar || imgBlueBall;
+            if (el.src !== src) el.src = src;
         }
 
-        const p1Top = state.player1.y; 
-        const p2Top = state.player2.y;
+        const bgKey = 'bg_mixed';
+        if (this.images[bgKey] && this.els['stadium-bg']) {
+             const newBg = `url("${this.images[bgKey].src}")`;
+             if (this.els['stadium-bg'].style.backgroundImage !== newBg) {
+                 this.els['stadium-bg'].style.backgroundImage = newBg;
+             }
+        }
+
+        // --- 4. Game Avatars (Ao lado da raquete) ---
+        const AVATAR_OFFSET = 25; 
+        
+        const p1Top = state.player1.y + (state.player1.height / 2) - AVATAR_OFFSET;
+        const p2Top = state.player2.y + (state.player2.height / 2) - AVATAR_OFFSET;
 
         if (this.els['p1-game-avatar']) this.els['p1-game-avatar'].style.top = `${p1Top}px`;
         if (this.els['p2-game-avatar']) this.els['p2-game-avatar'].style.top = `${p2Top}px`;
 
-        if (this.els['p1-skin-img']) (this.els['p1-skin-img'] as HTMLImageElement).src = this.images[state.player1.skin]?.src || '';
-        if (this.els['p2-skin-img']) (this.els['p2-skin-img'] as HTMLImageElement).src = this.images[state.player2.skin]?.src || '';
+        // Imagem P1 (Raquete)
+        if (this.els['p1-skin-img']) {
+            const el = this.els['p1-skin-img'] as HTMLImageElement;
+            const src = state.player1.gameAvatar || imgRedBall;
+            if (el.src !== src) el.src = src;
+        }
 
+        // Imagem P2 (Raquete)
+        if (this.els['p2-skin-img']) {
+            const el = this.els['p2-skin-img'] as HTMLImageElement;
+            const src = state.player2.gameAvatar || imgBlueBall;
+            if (el.src !== src) el.src = src;
+        }
+
+        // --- 5. Escudos ---
         if (this.els['p1-shield-badge']) this.els['p1-shield-badge'].classList.toggle('hidden', !state.player1.shield);
         if (this.els['p2-shield-badge']) this.els['p2-shield-badge'].classList.toggle('hidden', !state.player2.shield);
     }
 
-    private getBgKey(s1: string, s2: string) {
-        if (s1 === 'tomato' && s2 === 'tomato') return 'bg_tomatoes';
-        if (s1 === 'potato' && s2 === 'potato') return 'bg_potatoes';
-        return 'bg_mixed';
-    }
-
-    // --- LOOP PRINCIPAL DE DESENHO ---
     private renderLoop = () => {
-        // Se ainda não recebeu dados do servidor, espera.
         if (!this.gameState) {
             this.animationFrameId = requestAnimationFrame(this.renderLoop);
             return;
@@ -269,7 +333,7 @@ export class GameController {
             const { width, height } = this.canvas;
             this.ctx.clearRect(0, 0, width, height);
 
-            // 1. Desenhar Mesa (Linha Central)
+            // Linha do meio
             this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
             this.ctx.lineWidth = 4;
             this.ctx.setLineDash([15, 15]);
@@ -279,11 +343,10 @@ export class GameController {
             this.ctx.stroke();
             this.ctx.setLineDash([]);
 
-            // 2. Raquetes
+            // Raquetes e Bola
             this.drawPaddle(this.gameState.player1, 10);
             this.drawPaddle(this.gameState.player2, width - 20);
 
-            // 3. Bola
             this.ctx.beginPath();
             this.ctx.arc(this.gameState.ball.x, this.gameState.ball.y, 10, 0, Math.PI * 2);
             this.ctx.fillStyle = '#fff';
@@ -292,7 +355,7 @@ export class GameController {
             this.ctx.fill();
             this.ctx.shadowBlur = 0;
 
-            // 4. PowerUps
+            // PowerUps
             if (this.gameState.powerUp && this.gameState.powerUp.active) {
                 this.drawPowerUp(this.gameState.powerUp);
             }
@@ -314,7 +377,6 @@ export class GameController {
         }
 
         this.ctx.beginPath();
-        // Fallback se roundRect não existir em navegadores muito antigos (mas moderno suporta)
         if (this.ctx.roundRect) {
             this.ctx.roundRect(x, player.y, 10, player.height, 5);
         } else {
@@ -326,12 +388,9 @@ export class GameController {
 
     private drawPowerUp(powerUp: NonNullable<GameState['powerUp']>) {
         const { x, y, type } = powerUp;
-        
-        const radius = 35; 
-        const iconSize = 50; // Aumentar ícone (de 40 para 50)
+        const iconSize = 50;
         const offset = iconSize / 2;
 
-        // Fundo do PowerUp
         this.ctx.beginPath();
         this.ctx.arc(x, y, 25, 0, Math.PI * 2);
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
@@ -339,34 +398,29 @@ export class GameController {
         this.ctx.strokeStyle = '#fff';
         this.ctx.stroke();
 
-        // Borda pulsante (opcional, visual extra)
         this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 + Math.sin(Date.now() / 200) * 0.2})`;
         this.ctx.lineWidth = 3;
         this.ctx.stroke();
 
-        let icon: HTMLImageElement | null = null;
+        // Usa as bolas como ícones temporários para evitar crash
+        // (Você pode substituir isso depois quando tiver ícones reais)
+        let icon = this.images['icon_big']; 
         let color = '#fff';
 
-        // Cast para string para evitar erros de tipagem em runtime se o Enum falhar
         const typeStr = type as unknown as string;
 
         if (typeStr === 'BIG_PADDLE' || type === PowerUpType.BIG_PADDLE) { 
-            icon = this.images['icon_big']; 
             color = '#22c55e'; 
         }
         else if (typeStr === 'SHIELD' || type === PowerUpType.SHIELD) { 
-            icon = this.images['icon_shield']; 
             color = '#06b6d4'; 
         }
         else if (typeStr === 'SPEED_BOOST' || type === PowerUpType.SPEED_BOOST) { 
-            icon = this.images['icon_speed']; 
             color = '#f97316'; 
         }
 
-        // Desenha Ícone ou Fallback
         if (icon && icon.complete && icon.naturalWidth > 0) {
             try {
-                // MUDANÇA 2: Centralizar imagem maior
                 this.ctx.drawImage(icon, x - offset, y - offset, iconSize, iconSize);
             } catch (e) {
                 this.drawPowerUpFallback(x, y, color);
@@ -404,27 +458,41 @@ export class GameController {
         if (overlay) {
             overlay.classList.remove('hidden');
             if (this.els['overlay-msg']) this.els['overlay-msg'].innerText = data.message;
-            // Botão reiniciar seria implementado aqui
+            if (this.els['overlay-title']) this.els['overlay-title'].innerText = "FIM DE JOGO";
+            
+            const btn = document.getElementById('btn-restart');
+            if(btn) {
+                btn.classList.remove('hidden');
+                btn.onclick = () => window.location.reload(); 
+            }
         }
     }
 
     private handleQuit() {
         if (confirm("Tem certeza que deseja abandonar a batalha?")) {
-            this.socket.disconnect(); 
-            window.location.href = '/'; 
+            this.destroy();
+            window.location.href = '/dashboard'; 
         }
     }
 
     public destroy() {
         if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-        window.removeEventListener('keydown', this.handleInput);
-        window.removeEventListener('keyup', this.handleInputUp);
         
-        this.socket.off('gameState');
-        this.socket.off('scoreUpdate');
-        this.socket.off('gameOver');
-        this.socket.off('matchStatus');
+        window.removeEventListener('keydown', this.handleInputSocket);
+        window.removeEventListener('keyup', this.handleInputUpSocket);
+        window.removeEventListener('keydown', this.handleInputLocal);
+        window.removeEventListener('keyup', this.handleInputUpLocal);
         
-        this.socket.disconnect(); 
+        if (this.socket) {
+            this.socket.off('gameState');
+            this.socket.off('scoreUpdate');
+            this.socket.off('gameOver');
+            this.socket.off('matchStatus');
+            this.socket.disconnect();
+        }
+
+        if (this.localEngine) {
+            this.localEngine.stop();
+        }
     }
 }

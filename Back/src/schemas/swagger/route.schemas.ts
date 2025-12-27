@@ -324,3 +324,33 @@ export const disable2FARouteSchema = {
         }
     }
 } as const
+
+export const deleteAccountRouteSchema = {
+    tags: ['auth'],
+    summary: 'Deletar conta',
+    description: 'Exclui permanentemente a conta do usuário. Requer senha e, se ativo, o token 2FA.',
+    security: [{ bearerAuth: [] }],
+    body: {
+        type: 'object',
+        properties: {
+            password: { type: 'string' },
+            token: { type: 'string', description: 'Obrigatório se 2FA estiver ativo' }
+        }
+    },
+    response: {
+        200: {
+            description: 'Conta deletada com sucesso',
+            type: 'object',
+            properties: {
+                message: { type: 'string' }
+            }
+        },
+        400: {
+            description: 'Dados inválidos (Senha incorreta ou Token inválido)',
+            type: 'object',
+            properties: {
+                error: { type: 'string' }
+            }
+        }
+    }
+} as const
