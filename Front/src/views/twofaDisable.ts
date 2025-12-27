@@ -8,6 +8,9 @@ import { state, saveState, type Route } from "../store/appState";
 //imgs
 import bgPotatoes from '../assets/bg-login-potatoes.png';
 import bgTomatoes from '../assets/bg-login-tomatoes.png';
+import { Form } from "@/components/Form";
+import { validateForm } from "@/utils/formValidation";
+import { disable2FASchema } from "@/schemas/auth.schemas";
 
 const backgroundByGang = {
 	potatoes: bgPotatoes,
@@ -39,26 +42,30 @@ export function get2FADisableHtml() {
 						Para continuar, informe o Token de 6 dígitos do seu autenticador.
 					</p>
 
-					<div class="mb-6">
-						${Input({
-							id: "input-2fa-disable-token",
-							placeholder: "000 000",
-							className: `
-								text-center text-3xl tracking-[0.5em] font-mono
-								bg-slate-800/80 border border-white/10
-								focus:border-red-500
-								focus:shadow-[0_0_10px_rgba(239,68,68,0.4)]
-								py-4 text-white
-							`,
-							type: "text" // ou number
-						})}
-					</div>
+					${Form({
+						id: "form-2fa-disable",
+						className: "mb-6",
+						children: `
+							${Input({
+								id: "input-2fa-disable-token",
+								placeholder: "000 000",
+								className: `
+									text-center text-3xl tracking-[0.5em] font-mono
+									bg-slate-800/80 border border-white/10
+									focus:border-red-500
+									focus:shadow-[0_0_10px_rgba(239,68,68,0.4)]
+									py-4 text-white
+								`,
+							})}
+						`
+					})}
 
 					${Button({
 						id: "btn-2fa-disable-confirm",
 						text: "Confirmar Desativação",
 						variant: "danger",
-						className: "w-full py-3"
+						className: "w-full py-3",
+						attributes: "type='submit' form='form-2fa-disable'"
 					})}
 
 					${Button({
@@ -75,27 +82,35 @@ export function get2FADisableHtml() {
 
 // --- LÓGICA ---
 export function setup2FADisableEvents(navigate: (route: Route) => void) {
-	const confirmBtn = document.getElementById("btn-2fa-disable-confirm") as HTMLButtonElement;
 	const cancelBtn = document.getElementById("btn-2fa-disable-cancel") as HTMLButtonElement;
 
 	// Ação Confirmar
-	confirmBtn?.addEventListener("click", async () => {
-		const input = document.getElementById("input-2fa-disable-token") as HTMLInputElement;
-		// Remove espaços em branco caso o usuário digite "123 456"
-		const tokenValue = input?.value.replace(/\s/g, '');
+	const form2faDisable = document.getElementById('form-2fa-disable') as HTMLFormElement;
+	form2faDisable?.addEventListener('submit', async (e) => {
+		e.preventDefault();
 
-		if (!tokenValue || tokenValue.length !== 6) {
+		const input = document.getElementById("input-2fa-disable-token") as HTMLInputElement;
+		const token = input?.value;
+
+		const formData = {
+			token
+		};
+
+		const validation = validateForm(disable2FASchema, formData);
+
+		if (!validation.success) {
 			showModal({
-				title: "Código inválido",
-				message: "Informe o código de 6 dígitos do autenticador.",
-				type: "danger"
+				title: "Token inválido",
+				message: "O token deve conter exatamente 6 dígitos numéricos.",
+				type: "danger",
+				confirmText: "Tentar novamente"
 			});
 			return;
 		}
 
 		try {
 			const response = await authService.disable2FA({
-				token: tokenValue,
+				token,
 			});
 
 			if (response.message === '2FA desabilitado com sucesso') {
@@ -122,7 +137,7 @@ export function setup2FADisableEvents(navigate: (route: Route) => void) {
 			input.value = "";
 			input.focus();
 		}
-	});
+	})
 
 	// Ação Cancelar
 	cancelBtn?.addEventListener("click", () => {
