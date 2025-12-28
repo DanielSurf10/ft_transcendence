@@ -279,7 +279,8 @@ export async function getMultiplayerHtml() {
             </div>
 
             <!-- Layout das colunas -->
-            <div class="w-full flex flex-col lg:flex-row gap-4 md:gap-6 lg:gap-8 h-auto lg:h-[calc(100vh-200px)]">
+            <div class="w-full flex flex-row gap-4 md:gap-6 lg:gap-8 h-auto lg:h-[calc(100vh-200px)]">
+
                 <!-- Coluna RANKEADA -->
                 ${renderRankedColumn(rankedInvites)}
 
