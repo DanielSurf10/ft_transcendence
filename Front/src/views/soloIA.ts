@@ -61,7 +61,7 @@ export function getSoloIAHtml() {
                     <span
                         class="${headerColor} text-sm md:text-base font-extrabold
                                tracking-[0.35em] uppercase">
-                        C.A.D.E.T.E
+                        C.A.D.E.T.E 🤖
                     </span>
 
                     <!-- Descrição -->
@@ -77,7 +77,7 @@ export function getSoloIAHtml() {
                     <!-- Subtítulo -->
                     <h3 class="text-lg md:text-xl text-white font-bold
                                flex items-center justify-center gap-3 tracking-wide">
-                        <span class="text-cyan-400">🤖</span>
+                        <span class="text-cyan-400">🔥</span>
                         Selecione a dificuldade
                     </h3>
 
