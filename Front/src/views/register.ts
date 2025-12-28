@@ -4,16 +4,16 @@ import { Card } from "../components/Card";
 import { Form } from "../components/Form";
 import { Input } from "../components/Input";
 import { Select } from "../components/Select";
-import { authService } from "../services/authRoutes";
 import { registerSchema } from "../schemas/auth.schemas";
-import { validateForm, displayFormErrors, clearFormErrors } from "../utils/formValidation";
-import { showModal } from "../utils/modalManager";
+import { authService } from "../services/authRoutes";
 import { type Route } from "../store/appState";
+import { clearFormErrors, displayFormErrors, validateForm } from "../utils/formValidation";
+import { showModal } from "../utils/modalManager";
 
 //imgs
-import bgDefault from '../assets/bg-login.png';
 import bgPotatoes from '../assets/bg-login-potatoes.png';
 import bgTomatoes from '../assets/bg-login-tomatoes.png';
+import bgDefault from '../assets/bg-login.png';
 
 // Variável local de estado visual
 let theme: "potatoes" | "tomatoes" | "default" = "default";
@@ -114,7 +114,8 @@ function updateRegisterBg() {
 			text: "Cadastrar",
 			variant: "primary",
 			theme: theme,
-			className: "w-2/3"
+			className: "w-2/3",
+			attributes: 'type="submit"'
 		});
 	}
 	if (buttonBack) {
@@ -197,20 +198,20 @@ export function getRegisterHtml() {
 									})}
 								</div>
 
-								<div class="flex gap-4 mt-8" id="register-buttons-container">
+								<div class="flex flex-row-reverse gap-4 mt-8" id="register-buttons-container">
+									${Button({
+										id: "btn-register-submit",
+										text: "Cadastrar",
+										variant: "primary",
+										className: "w-2/3",
+										attributes: 'type="submit"'
+									})}
 									${Button({
 										id: "btn-register-back",
 										text: "Voltar",
 										variant: "secondary",
 										className: "w-1/3",
 										attributes: 'type="button"'
-									})}
-									${Button({
-										id: "btn-register-submit",
-										text: "Cadastrar",
-										variant: "primary",
-										className: "w-2/3",
-										// attributes: 'type="submit"' (Omissão torna submit padrão dentro do form)
 									})}
 								</div>
 							`
@@ -235,6 +236,7 @@ export function setupRegisterEvents(navigate: (route: Route) => void) {
 		const target = e.target as HTMLElement;
 		// Verifica se clicou no botão voltar ou dentro dele
 		if (target.id === 'btn-register-back' || target.closest('#btn-register-back')) {
+			e.preventDefault(); // Previne qualquer comportamento padrão
 			navigate('login');
 		}
 	});

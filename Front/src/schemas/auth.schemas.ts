@@ -55,8 +55,6 @@ export const anonymousSchema = z.object({
 
 export const enable2FASchema = z.object({
 	token: tokenValidation,
-	secret: z.string()
-		.min(16, 'Secret deve ter no mínimo 16 caracteres')
 })
 
 export const disable2FASchema = z.object({

@@ -1,6 +1,6 @@
-import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify'
+import { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
 import fp from 'fastify-plugin'
-import { ZodType, ZodError } from 'zod'
+import { ZodError, ZodType } from 'zod'
 
 declare module 'fastify' {
 	interface FastifyInstance {
