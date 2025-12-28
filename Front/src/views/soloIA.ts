@@ -91,7 +91,10 @@ export function getSoloIAHtml() {
                                    bg-green-600/20 text-green-400
                                    border border-green-500/30
                                    hover:bg-green-600/30 transition">
-                            Fácil
+                            <div class="flex flex-col items-center">
+                                <span>Fácil</span>
+                            </div>
+                            <span class="ml-auto text-xl">🔥</span>
                         </button>
 
                         <button id="btn-solo-medium"
@@ -101,7 +104,10 @@ export function getSoloIAHtml() {
                                    bg-yellow-600/20 text-yellow-400
                                    border border-yellow-500/30
                                    hover:bg-yellow-600/30 transition">
-                            Médio
+                            <div class="flex flex-col items-center">
+                                <span>Médio</span>
+                            </div>
+                            <span class="ml-auto text-xl">🔥🔥</span>
                         </button>
 
                         <button id="btn-solo-hard"
@@ -111,7 +117,10 @@ export function getSoloIAHtml() {
                                    bg-red-600/20 text-red-400
                                    border border-red-500/30
                                    hover:bg-red-600/30 transition">
-                            Difícil
+                            <span class="flex flex-col items-center">
+                                <span>Difícil</span>
+                            </span>
+                            <span class="ml-auto text-xl">🔥🔥🔥</span>
                         </button>
 
                     </div>
