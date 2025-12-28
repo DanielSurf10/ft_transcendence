@@ -1,4 +1,4 @@
-import { state } from "../store/appState";
+import { state, type Route } from "../store/appState";
 import { Button } from "../components/Button";
 
 // imgs
@@ -77,7 +77,7 @@ export function getSoloIAHtml() {
                     <!-- Subtítulo -->
                     <h3 class="text-lg md:text-xl text-white font-bold
                                flex items-center justify-center gap-3 tracking-wide">
-                        <span class="text-cyan-400">🎯</span>
+                        <span class="text-cyan-400">🤖</span>
                         Selecione a dificuldade
                     </h3>
 
@@ -91,7 +91,7 @@ export function getSoloIAHtml() {
                                    bg-green-600/20 text-green-400
                                    border border-green-500/30
                                    hover:bg-green-600/30 transition">
-                            🤖 Fácil
+                            Fácil
                         </button>
 
                         <button id="btn-solo-medium"
@@ -101,7 +101,7 @@ export function getSoloIAHtml() {
                                    bg-yellow-600/20 text-yellow-400
                                    border border-yellow-500/30
                                    hover:bg-yellow-600/30 transition">
-                            🤖 Médio
+                            Médio
                         </button>
 
                         <button id="btn-solo-hard"
@@ -111,7 +111,7 @@ export function getSoloIAHtml() {
                                    bg-red-600/20 text-red-400
                                    border border-red-500/30
                                    hover:bg-red-600/30 transition">
-                            🤖 Difícil
+                            Difícil
                         </button>
 
                     </div>
