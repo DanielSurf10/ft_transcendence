@@ -293,42 +293,71 @@ export async function getMultiplayerHtml() {
 
 export function setupMultiplayerEvents(navigate: (route: Route) => void) {
 
-    document.getElementById('btn-multiplayer-back')?.addEventListener('click', () => {
-        navigate('dashboard');
-    });
+    // 🔙 Botão Voltar
+    document
+        .getElementById('btn-multiplayer-back')
+        ?.addEventListener('click', () => {
+            navigate('dashboard');
+        });
 
     const viewRoot = document.getElementById('multiplayer-view-root');
-
     if (!viewRoot) return;
-    
+
+    // 🧠 Delegação de eventos
     viewRoot.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
 
-        const inviteBtn = target.closest('.btn-friend-invite') as HTMLElement;
-        if (!inviteBtn) return;
+        /* =====================================================
+         * 🎮 CONVITES — Aceitar / Recusar
+         * ===================================================== */
+        const actionBtn = target.closest('.btn-invite-action') as HTMLElement;
 
-        // Evita clique duplo
-        if (inviteBtn.classList.contains('is-disabled')) return;
+        if (actionBtn) {
+            const action = actionBtn.dataset.action;
+            const inviteId = actionBtn.dataset.id;
 
-        const nick = inviteBtn.getAttribute('data-nick');
+            if (!action || !inviteId) return;
 
-        // 🔒 "Desabilita" visualmente
-        inviteBtn.classList.add(
-            'is-disabled',
-            'bg-gray-500',
-            'cursor-not-allowed',
-            'opacity-70'
-        );
+            // 🔴 RECUSAR
+            if (action === 'decline') {
+                actionBtn.closest('.group')?.remove();
+                return;
+            }
 
-        inviteBtn.classList.remove(
-            'bg-green-600',
-            'hover:bg-green-700'
-        );
+            // 🟢 ACEITAR
+            if (action === 'accept') {
+                navigate('game');
+                return;
+            }
+        }
 
-        // 🔁 Troca texto
-        inviteBtn.innerHTML = 'Convidado';
+        /* =====================================================
+         * 👥 AMIGOS — Convidar
+         * ===================================================== */
+        const inviteFriendBtn = target.closest('.btn-friend-invite') as HTMLElement;
 
-        console.log(`Convite enviado para ${nick}`);
+        if (inviteFriendBtn) {
+            // Evita clique duplo
+            if (inviteFriendBtn.classList.contains('is-disabled')) return;
+
+            const nick = inviteFriendBtn.dataset.nick;
+
+            // 🔒 Desabilita visualmente
+            inviteFriendBtn.classList.add(
+                'is-disabled',
+                'bg-gray-500',
+                'cursor-not-allowed',
+                'opacity-70'
+            );
+
+            inviteFriendBtn.classList.remove(
+                'bg-green-600',
+                'hover:bg-green-700'
+            );
+
+            inviteFriendBtn.textContent = 'Convidado';
+
+            console.log(`Convite enviado para ${nick}`);
+        }
     });
 }
-
