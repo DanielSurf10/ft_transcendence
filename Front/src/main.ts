@@ -19,6 +19,7 @@ import * as SettingsView from './views/settings';
 import * as TwoFAView from './views/twofa';
 import * as TwoFADisableView from './views/twofaDisable';
 import * as SoloIA from './views/soloIA';
+import * as Multiplayer from './views/multiplayer';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let localGameController: GameController | null = null;
@@ -92,7 +93,12 @@ async function renderView(route: Route) {
             app.innerHTML = DashboardView.getDashboardHtml();
             DashboardView.setupDashboardEvents(navigateTo);
             break;
-            
+        
+		case 'multiplayer':
+			app.innerHTML = Multiplayer.getMultiplayerHtml();
+			Multiplayer.setupMultiplayerEvents(navigateTo);
+			break;
+
         case 'game':
             app.innerHTML = GameView.getGameHtml();
             initGameSocket();
