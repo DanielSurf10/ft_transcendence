@@ -23,7 +23,8 @@ async function swaggerPlugin(app: FastifyInstance) {
 			],
 			tags: [
 				{ name: 'auth', description: 'Endpoints de autenticação' },
-				{ name: 'friends', description: 'Endpoints de gerenciamento de amigos' }
+				{ name: 'friends', description: 'Endpoints de gerenciamento de amigos' },
+				{ name: 'users', description: 'Endpoints de gerenciamento de usuário' }
 			],
 			components: {
 				securitySchemes: {
@@ -44,8 +45,6 @@ async function swaggerPlugin(app: FastifyInstance) {
 			deepLinking: true
 		}
 	})
-
-	console.log('📚 Swagger habilitado em /docs')
 }
 
 export default fp(swaggerPlugin)

@@ -6,12 +6,13 @@ import { saveState, state, type Route } from "../store/appState";
 import { showModal } from "../utils/modalManager";
 
 //imgs
+import { Form } from "@/components/Form";
+import { nickSchema } from "@/schemas/common.schemas";
+import { validateForm } from "@/utils/formValidation";
 import bgPotatoes from '../assets/bg-login-potatoes.png';
 import bgTomatoes from '../assets/bg-login-tomatoes.png';
 import bgDefault from '../assets/bg-login.png';
-import { Form } from "@/components/Form";
-import { validateForm } from "@/utils/formValidation";
-import { nickSchema } from "@/schemas/common.schemas";
+import { profileService } from "@/services/profileRoutes";
 
 // --- HELPER LOCAL ---
 const StatItem = (label: string, valueId: string, colorClass: string = "text-white") => `
@@ -168,11 +169,16 @@ export function setupProfileEvents(navigate: (route: Route) => void) {
 		}
 
 		try {
-			// await profileService.updateProfile(formData);
+			const response = await profileService.updateProfile({ nick });
+
+			if (response.token) {
+				localStorage.setItem('authToken', response.token);
+			}
 
 			// Atualizar estado global
 			if (state.user) {
 				state.user.nick = nick;
+				saveState();
 			}
 
 			showModal({
