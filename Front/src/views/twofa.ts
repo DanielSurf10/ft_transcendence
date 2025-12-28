@@ -9,6 +9,9 @@ import { state, type Route } from "../store/appState";
 //imgs
 import bgPotatoes from '../assets/bg-login-potatoes.png';
 import bgTomatoes from '../assets/bg-login-tomatoes.png';
+import { Form } from "@/components/Form";
+import { validateForm } from "@/utils/formValidation";
+import { enable2FASchema } from "@/schemas/auth.schemas";
 
 const backgroundByGang = {
 	potatoes: bgPotatoes,
@@ -111,16 +114,30 @@ export function get2FAHtml(data: { qrCodeUrl: string; secret: string; }) {
 						</div>
 					</div>
 
+					${Form({
+						id: "form-2fa-enable",
+						className: "mb-6",
+						children: `
+							<label class="text-xs text-gray-400 font-bold uppercase mb-1 block">Código do autenticador</label>
+							${Input({
+								id: "input-2fa-code",
+								placeholder: "000 000",
+								className: `text-center text-3xl tracking-[0.5em] font-mono bg-slate-800/80 border border-white/10 focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(6,182,212,0.4)] py-4`
+							})}
+						`
+					})}
+
 					<div class="mb-6">
-						<label class="text-xs text-gray-400 font-bold uppercase mb-1 block">Código do autenticador</label>
-						${Input({
-							id: "input-2fa-code",
-							placeholder: "000 000",
-							className: `text-center text-3xl tracking-[0.5em] font-mono bg-slate-800/80 border border-white/10 focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(6,182,212,0.4)] py-4`
-						})}
+
 					</div>
 
-					${Button({ id: "btn-2fa-send", text: "Ativar 2FA", variant: "primary", theme: buttonTheme })}
+					${Button({
+						id: "btn-2fa-send",
+						text: "Ativar 2FA",
+						variant: "primary",
+						theme: buttonTheme,
+						attributes: 'type="submit" form="form-2fa-enable"'
+					})}
 					${Button({ id: "btn-2fa-back", text: "Cancelar", variant: "ghost", className: "mt-4 text-sm" })}
 				`
 			})}
@@ -151,25 +168,33 @@ export function setup2FAEvents(navigate: (route: Route) => void) {
 	});
 
 	// 3. Confirmar 2FA
-	document.getElementById('btn-2fa-send')?.addEventListener('click', async () => {
-		const tokenInput = document.getElementById('input-2fa-code') as HTMLInputElement;
-		const tokenValue = tokenInput.value.replace(/\s/g, '');
-		const secretCode = (document.getElementById('input-2fa-secret') as HTMLInputElement).value;
+	const form2faEnable = document.getElementById('form-2fa-enable') as HTMLFormElement;
+	form2faEnable?.addEventListener('submit', async (e) => {
+		e.preventDefault();
 
-		if (tokenValue.length !== 6) {
+		const token = (document.getElementById('input-2fa-code') as HTMLInputElement)?.value;
+		const secret = (document.getElementById('input-2fa-secret') as HTMLInputElement).value;
+
+		const formData = {
+			token
+		};
+
+		const validation = validateForm(enable2FASchema, formData);
+
+		if (!validation.success) {
 			showModal({
-				title: "Código inválido",
-				message: "O código deve conter exatamente 6 dígitos.",
+				title: "Token inválido",
+				message: "O token deve conter exatamente 6 dígitos numéricos.",
 				type: "danger",
-				confirmText: "Corrigir"
+				confirmText: "Tentar novamente"
 			});
 			return;
 		}
 
 		try {
 			const response = await authService.enable2FA({
-				token: tokenValue,
-				secret: secretCode,
+				token,
+				secret,
 			});
 
 			if (response.message === '2FA habilitado com sucesso') {
@@ -216,5 +241,5 @@ export function setup2FAEvents(navigate: (route: Route) => void) {
 				confirmText: "Tentar novamente",
 			});
 		}
-	});
+	})
 }

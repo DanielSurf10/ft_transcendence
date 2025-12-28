@@ -4,6 +4,9 @@ import { Input } from "../components/Input";
 import { authService } from "../services/authRoutes";
 import { showModal } from "../utils/modalManager";
 import { state, saveState, type Route } from "../store/appState";
+import { Form } from "@/components/Form";
+import { validateForm } from "@/utils/formValidation";
+import { login2FASchema } from "@/schemas/auth.schemas";
 
 // --- HTML ---
 export function getLogin2FAHtml() {
@@ -13,7 +16,6 @@ export function getLogin2FAHtml() {
 	const gang = user?.gang || 'potatoes';
 	const isPotato = gang === 'potatoes';
 
-	// const titleColor = isPotato ? 'text-yellow-400' : 'text-red-400';
 	const titleColor = 'text-white';
 	const titleGlow = isPotato
 		? 'drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]'
@@ -48,26 +50,31 @@ export function getLogin2FAHtml() {
 						Sua conta está protegida. Digite o código de 6 dígitos do seu aplicativo autenticador.
 					</p>
 
-					<div class="mb-8">
-						${Input({
-							id: "input-login-2fa-code",
-							placeholder: "2FA CODE",
-							className: `
-								text-center text-3xl tracking-[0.5em] font-mono
-								bg-slate-800/80 border border-white/10
-								focus:border-cyan-500
-								focus:shadow-[0_0_15px_rgba(6,182,212,0.4)]
-								py-4 text-white
-							`,
-							type: "text",
-						})}
-					</div>
+					${Form({
+						id: "form-2fa-login",
+						className: "mb-8",
+						children: `
+							${Input({
+								id: "input-login-2fa-code",
+								placeholder: "2FA CODE",
+								className: `
+									text-center text-3xl tracking-[0.5em] font-mono
+									bg-slate-800/80 border border-white/10
+									focus:border-cyan-500
+									focus:shadow-[0_0_15px_rgba(6,182,212,0.4)]
+									py-4 text-white
+								`,
+								type: "text",
+							})}
+						`
+					})}
 
 					${Button({
 						id: "btn-login-2fa-confirm",
 						text: "Verificar e Entrar",
 						variant: "primary",
-						className: "w-full py-3 text-lg"
+						className: "w-full py-3 text-lg",
+						attributes: "type='submit' form='form-2fa-login'"
 					})}
 
 					${Button({
@@ -93,21 +100,33 @@ export function setupLogin2FAEvents(navigate: (route: Route) => void) {
 	});
 
 	// Botão Confirmar
-	document.getElementById('btn-login-2fa-confirm')?.addEventListener('click', async () => {
-		const tokenInput = document.getElementById('input-login-2fa-code') as HTMLInputElement;
-		const code = tokenInput.value;
+	const formLogin2fa = document.getElementById('form-2fa-login') as HTMLFormElement;
+	formLogin2fa?.addEventListener('submit', async (e) => {
+		e.preventDefault();
 
-		const tempToken = localStorage.getItem('tempToken');
+		const input = document.getElementById('input-login-2fa-code') as HTMLInputElement;
+		const token = input?.value;
 
-		// Se perdeu o token temporário (F5 na página), volta pro login
-		if (!tempToken) {
-			navigate('login');
+
+		const formData = {
+			token
+		};
+
+		const validation = validateForm(login2FASchema, formData);
+
+		if (!validation.success) {
+			showModal({
+				title: "Token inválido",
+				message: "O token deve conter exatamente 6 dígitos numéricos.",
+				type: "danger",
+				confirmText: "Tentar novamente"
+			});
 			return;
 		}
 
 		try {
 			const response = await authService.login2FA({
-				token: code,
+				token,
 			});
 
 			// Sucesso: Persiste token real e limpa temporário
@@ -137,8 +156,9 @@ export function setupLogin2FAEvents(navigate: (route: Route) => void) {
 				type: "danger",
 				confirmText: "Tentar novamente"
 			});
-			tokenInput.value = "";
-			tokenInput.focus();
+			input.value = "";
+			input.focus();
 		}
-	});
+	})
+
 }
