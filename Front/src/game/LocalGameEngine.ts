@@ -5,6 +5,8 @@ import { PowerUpType } from '../types/game';
 import imgBlueBall from '../assets/blueball.png';
 import imgRedBall from '../assets/redball.png';
 
+// AI Profile images by difficulty
+
 // Constantes
 const TABLE_WIDTH = 800;
 const TABLE_HEIGHT = 600;
@@ -45,6 +47,7 @@ export class LocalGameEngine {
     const myNick = state.user?.nick || 'Você';
     const myProfilePic = state.user?.avatar || '/assets/default-avatar.png';
     const myGameAvatar = state.user?.gameAvatar || imgRedBall;
+    const myGang = state.user?.gang || 'potatoes';
 
     this.state = {
       tableWidth: TABLE_WIDTH,
@@ -60,7 +63,8 @@ export class LocalGameEngine {
           nick: myNick,
           avatar: myProfilePic,     
           gameAvatar: myGameAvatar, 
-          skin: 'tomato' 
+          skin: myGang === 'potatoes' ? 'potato' : 'tomato'
+          // skin: 'tomato'
       },
       
       // (IA - C.A.D.E.T.E.)
@@ -73,7 +77,7 @@ export class LocalGameEngine {
           nick: 'C.A.D.E.T.E.', 
           avatar: AI_PROFILE_PIC,
           gameAvatar: AI_GAME_AVATAR,
-          skin: 'potato' 
+          skin: 'ai' 
       },
       
       powerUp: null

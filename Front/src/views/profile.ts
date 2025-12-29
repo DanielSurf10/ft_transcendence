@@ -4,6 +4,8 @@ import { Card } from "../components/Card";
 import { Input } from "../components/Input";
 import { saveState, state, type Route } from "../store/appState";
 import { showModal } from "../utils/modalManager";
+import { showAvatarModal } from "@/components/AvatarOptions";
+import { getDefaultAvatar, type Gang } from "@/components/AvatarOptions";
 
 //imgs
 import { Form } from "@/components/Form";
@@ -27,7 +29,6 @@ export function getProfileHtml() {
 	const user = state.user;
 	const selectedGang = (user?.gang || 'potatoes') as 'potatoes' | 'tomatoes';
 
-
 	// Ajuste de caminhos de assets (remove 'src' para funcionar no public)
 	const backgrounds = {
 		potatoes: bgPotatoes,
@@ -35,7 +36,7 @@ export function getProfileHtml() {
 	};
 
 	const bgSrc = backgrounds[selectedGang] || bgDefault;
-	const avatarSrc = selectedGang === "potatoes" ? "/assets/perfil-batata.png" : "/assets/perfil-tomate.png"; // foto de perfil padron
+	const avatarSrc = user?.avatar || getDefaultAvatar(selectedGang);
 
 	// Estilos dinâmicos
 	const headerColor = selectedGang === "tomatoes" ? "text-red-500" : selectedGang === "potatoes" ? "text-yellow-500" : "text-cyan-500";
@@ -198,27 +199,67 @@ export function setupProfileEvents(navigate: (route: Route) => void) {
 	});
 
 	// 4. Upload de Avatar (Mock Visual)
+// 	const profileImgContainer = document.querySelector('.group');
+// 	const fileInput = document.getElementById('upload-avatar') as HTMLInputElement;
+// 
+// 	if (profileImgContainer && fileInput) {
+// 		profileImgContainer.addEventListener('click', () => {
+// 			fileInput.click();
+// 		});
+// 
+// 		fileInput.addEventListener('change', (e) => {
+// 			const target = e.target as HTMLInputElement;
+// 			if (target.files && target.files[0]) {
+// 				const reader = new FileReader();
+// 				reader.onload = (e) => {
+// 					const img = document.getElementById('profile-img') as HTMLImageElement;
+// 					if (img && e.target?.result) {
+// 						img.src = e.target.result as string;
+// 						// Aqui você enviaria a imagem para o backend
+// 					}
+// 				};
+// 				reader.readAsDataURL(target.files[0]);
+// 			}
+// 		});
+// 	}
+
 	const profileImgContainer = document.querySelector('.group');
-	const fileInput = document.getElementById('upload-avatar') as HTMLInputElement;
 
-	if (profileImgContainer && fileInput) {
+	if (profileImgContainer) {
 		profileImgContainer.addEventListener('click', () => {
-			fileInput.click();
-		});
+			const gang = (state.user?.gang || 'potatoes') as Gang;
+			showAvatarModal(gang, async (avatarId, avatarSrc) => {
+				// Atualiza a imagem visualmente
+				const img = document.getElementById('profile-img') as HTMLImageElement;
+				if (img) {
+					img.src = avatarSrc;
+				}
 
-		fileInput.addEventListener('change', (e) => {
-			const target = e.target as HTMLInputElement;
-			if (target.files && target.files[0]) {
-				const reader = new FileReader();
-				reader.onload = (e) => {
-					const img = document.getElementById('profile-img') as HTMLImageElement;
-					if (img && e.target?.result) {
-						img.src = e.target.result as string;
-						// Aqui você enviaria a imagem para o backend
-					}
-				};
-				reader.readAsDataURL(target.files[0]);
-			}
+				// Salvar no state local (para persistir visualmente)
+				if (state.user) {
+					state.user.avatar = avatarSrc;
+					saveState();
+				}
+
+				// TODO: Enviar para o backend quando tiver o endpoint
+				// try {
+				//	 await profileService.updateAvatar({ avatarId });
+				//	 showModal({
+				//		 title: "Avatar atualizado!",
+				//		 message: "Seu novo avatar foi salvo.",
+				//		 type: "success",
+				//		 confirmText: "OK"
+				//	 });
+				// } catch (error: any) {
+				//	 showModal({
+				//		 title: "Erro",
+				//		 message: error.message || "Não foi possível atualizar o avatar.",
+				//		 type: "danger",
+				//		 confirmText: "OK"
+				//	 });
+				// }
+			});
 		});
 	}
+
 }

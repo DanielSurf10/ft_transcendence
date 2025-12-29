@@ -49,7 +49,7 @@ export function getSoloIAHtml() {
             </div>
 
             <!-- CADETE + CONTEÚDO -->
-            <div class="w-full max-w-4xl">
+            <div class="w-full">
                 <div
                     class="bg-black/30 backdrop-blur-md
                            px-8 py-8 rounded-xl
@@ -131,20 +131,20 @@ export function getSoloIAHtml() {
 }
 
     // --- LÓGICA ---
-    export function setupSoloIAEvents(navigate: (route: Route) => void) {
-        document
-            .getElementById('btn-solo-easy')
-            ?.addEventListener('click', () => navigate('soloIA'));
+export function setupSoloIAEvents(navigate: (route: Route, params?: any) => void) {
+    document
+        .getElementById('btn-solo-easy')
+        ?.addEventListener('click', () => navigate('game-solo', { difficulty: 1 }));
 
-        document
-            .getElementById('btn-solo-medium')
-            ?.addEventListener('click', () => navigate('soloIA'));
+    document
+        .getElementById('btn-solo-medium')
+        ?.addEventListener('click', () => navigate('game-solo', { difficulty: 2 }));
 
-        document
-            .getElementById('btn-solo-hard')
-            ?.addEventListener('click', () => navigate('soloIA'));
+    document
+        .getElementById('btn-solo-hard')
+        ?.addEventListener('click', () => navigate('game-solo', { difficulty: 3 }));
 
-        document
-            .getElementById('btn-solo-back')
-            ?.addEventListener('click', () => navigate('dashboard'));
-    }
+    document
+        .getElementById('btn-solo-back')
+        ?.addEventListener('click', () => navigate('dashboard'));
+}

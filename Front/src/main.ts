@@ -23,13 +23,18 @@ import * as Multiplayer from './views/multiplayer';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let localGameController: GameController | null = null;
+let navigationParams: any = {};
 
 // --- NAVEGAÇÃO CENTRAL ---
-function navigateTo(route: Route, addToHistory = true) {
-    // Guards de Autenticação
-    const protectedRoutes: Route[] = ['dashboard', 'profile', 'game', 'game-solo', 'friends', 'leaderboard', 'settings', '2fa', '2fa-disable', 'soloIA'];
-    const publicRoutes: Route[] = ['login', 'register', 'login2fa'];
-
+export function navigateTo(route: Route, params?: any, addToHistory = true) {
+	// Guards de Autenticação
+	const protectedRoutes: Route[] = ['dashboard', 'profile', 'game', 'game-solo', 'friends', 'leaderboard', 'settings', '2fa', '2fa-disable', 'soloIA'];
+	const publicRoutes: Route[] = ['login', 'register', 'login2fa'];
+	if (params) {
+		navigationParams = params;
+	} else {
+		if (route !== 'game-solo') navigationParams = {};
+	}
 	if (protectedRoutes.includes(route) && !state.isAuthenticated) {
 		return navigateTo('login');
 	}
@@ -39,7 +44,7 @@ function navigateTo(route: Route, addToHistory = true) {
 	}
 
 	if (addToHistory) {
-		history.pushState({ route }, '', `#${route}`);
+		history.pushState({ route, params: navigationParams }, '', `#${route}`);
 	}
 
 	window.location.hash = `#${route}`;
@@ -62,12 +67,12 @@ function checkAnonymousAccess(): boolean {
 }
 
 async function renderView(route: Route) {
-    disconnectGame();
+	disconnectGame();
 
-    if (localGameController) {
-        localGameController.destroy();
-        localGameController = null;
-    }
+	if (localGameController) {
+		localGameController.destroy();
+		localGameController = null;
+	}
 
 	switch (route) {
 		case 'login':
@@ -89,32 +94,33 @@ async function renderView(route: Route) {
 			RegisterView.setupRegisterEvents(navigateTo);
 			break;
 
-        case 'dashboard':
-            app.innerHTML = DashboardView.getDashboardHtml();
-            DashboardView.setupDashboardEvents(navigateTo);
-            break;
-        
+		case 'dashboard':
+			app.innerHTML = DashboardView.getDashboardHtml();
+			DashboardView.setupDashboardEvents(navigateTo);
+			break;
+		
 		case 'multiplayer':
 			if (checkAnonymousAccess()) return;
 			app.innerHTML = await Multiplayer.getMultiplayerHtml();
 			Multiplayer.setupMultiplayerEvents(navigateTo);
 			break;
 
-        case 'game':
-            app.innerHTML = GameView.getGameHtml();
-            initGameSocket();
-             break;
-        
+		case 'game':
+			app.innerHTML = GameView.getGameHtml();
+			initGameSocket();
+			 break;
+		
 		case 'soloIA':
-			if (checkAnonymousAccess()) return;
+			// if (checkAnonymousAccess()) return;
 			app.innerHTML = SoloIA.getSoloIAHtml();
-			SoloIA.setupSoloIAEvents(navigateTo);
+			SoloIA.setupSoloIAEvents((r, p) => navigateTo(r, p));
 			break;
 
-        case 'game-solo':
-            app.innerHTML = GameView.getGameHtml();
-            localGameController = new GameController({ difficulty: 2 });
-            break;
+		case 'game-solo':
+			app.innerHTML = GameView.getGameHtml();
+			const difficulty = navigationParams.difficulty || 2;
+			localGameController = new GameController({ difficulty: difficulty });
+			break;
 
 		case 'profile':
 			if (checkAnonymousAccess()) return;
@@ -170,20 +176,20 @@ async function renderView(route: Route) {
 }
 
 window.addEventListener('popstate', (event) => {
-    const routeState = event.state;
-    if (routeState && routeState.route) {
-        navigateTo(event.state.route, false);
-    } else {
-        const path = window.location.hash.replace('#', '') as Route;
-        
-        const validRoutes: Route[] = ['login', 'register', 'dashboard', 'game', 'game-solo', 'profile', 'friends', 'leaderboard', 'settings', '2fa', '2fa-disable', 'login2fa'];
-        
-        if (validRoutes.includes(path)) {
-            navigateTo(path, false);
-        } else {
-            navigateTo('login', false);
-        }
-    }
+	const routeState = event.state;
+	if (routeState && routeState.route) {
+		navigateTo(event.state.route, routeState.params, false);
+	} else {
+		const path = window.location.hash.replace('#', '') as Route;
+		
+		const validRoutes: Route[] = ['login', 'register', 'dashboard', 'game', 'game-solo', 'profile', 'friends', 'leaderboard', 'settings', '2fa', '2fa-disable', 'login2fa'];
+		
+		if (validRoutes.includes(path)) {
+			navigateTo(path, false);
+		} else {
+			navigateTo('login', false);
+		}
+	}
 });
 
 const initialRoute = (window.location.hash.replace('#', '') as Route) || 'login';

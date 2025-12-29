@@ -29,7 +29,7 @@ class MemoryDatabase {
         this.addUser({
             name: 'batata', nick: 'batata', email: 'batata@teste.com',
             password: '$2b$10$zyn5MC8ezQtsVR/4NQD6W.fdIfSDC.997KP72mNbq2EjBt.hEnWKe',
-            isAnonymous: false, gang: 'potatoes', score: 5000,
+            isAnonymous: false, gang: 'potatoes', score: 4500,
             friends: [], friendRequestsSent: [], friendRequestsReceived: []
         });
         

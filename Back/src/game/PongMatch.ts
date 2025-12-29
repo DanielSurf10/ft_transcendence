@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import { GameState, PlayerSkin, PowerUpType } from '../types/game';
+import { db } from '../database/memoryDB';
 
 // Constantes
 const FPS = 60;
@@ -10,8 +11,11 @@ const DEFAULT_PADDLE_HEIGHT = 130;
 const BALL_RADIUS = 10;
 const WIN_SCORE = 5;
 
+const POINTS_WIN = 20;
+const POINTS_LOSE = 10;
+
 export interface PlayerData {
-    id: string;
+    id: number;
     socketId: string;
     nick: string;
     avatar: string;
@@ -23,6 +27,10 @@ export class PongMatch {
   private io: Server;
   private state: GameState;
   private roomId: string;
+  private isRanked: boolean;
+
+  private p1UserId: number;
+  private p2UserId: number;
   
   // Propriedades Públicas para acesso no Server.ts
   public p1SocketId: string;
@@ -45,13 +53,17 @@ export class PongMatch {
   private ballSpeed: number = 5; 
   private ballDir = { x: 0, y: 0 };
   
-  constructor(io: Server, roomId: string, p1Data: PlayerData, p2Data: PlayerData) {
+  constructor(io: Server, roomId: string, p1Data: PlayerData, p2Data: PlayerData, isRanked: boolean = false) {
     this.io = io;
     this.roomId = roomId;
+    this.isRanked = isRanked;
     
     // Inicializa IDs públicos
     this.p1SocketId = p1Data.socketId;
     this.p2SocketId = p2Data.socketId;
+
+    this.p1UserId = p1Data.id;
+    this.p2UserId = p2Data.id;
 
     this.state = {
       tableWidth: 800,
@@ -334,26 +346,27 @@ export class PongMatch {
   }
 
   // --- Método Público para o Servidor Chamar ---
-  public handleDisconnection(socketId: string) {
+public handleDisconnection(socketId: string) {
       if (!this.isGameRunning) return;
 
-      let winnerId = '';
+      let winnerSocketId = '';
       let message = '';
 
       if (socketId === this.p1SocketId) {
-          winnerId = this.state.player2.id;
+          winnerSocketId = this.state.player2.id;
           message = 'Oponente desconectou. Você venceu!';
-      } else if (socketId === this.p2SocketId) {
-          winnerId = this.state.player1.id;
+      } 
+      else if (socketId === this.p2SocketId) {
+          winnerSocketId = this.state.player1.id;
           message = 'Oponente desconectou. Você venceu!';
       }
 
-      if (winnerId) {
-          this.endMatch(winnerId, message);
+      if (winnerSocketId) {
+          this.endMatch(winnerSocketId, message);
       }
   }
 
-  private endMatch(winnerId: string, customMessage?: string) {
+  private endMatch(winnerSocketId: string, customMessage?: string) {
     this.isGameRunning = false;
     this.isBallMoving = false;
 
@@ -365,11 +378,35 @@ export class PongMatch {
     if (p1Socket) p1Socket.removeAllListeners('movePaddle');
     if (p2Socket) p2Socket.removeAllListeners('movePaddle');
 
-    const defaultMsg = winnerId === this.state.player1.id ? 'Player 1 Wins!' : 'Player 2 Wins!';
+    // --- LÓGICA DE PONTOS (RANKED) ---
+    if (this.isRanked) {
+        this.processRankedPoints(winnerSocketId);
+    }
+
+    const defaultMsg = winnerSocketId === this.state.player1.id ? 'Player 1 Wins!' : 'Player 2 Wins!';
 
     this.io.to(this.roomId).emit('gameOver', {
-        winnerId: winnerId,
+        winnerId: winnerSocketId,
         message: customMessage || defaultMsg
     });
+  }
+
+  private async processRankedPoints(winnerSocketId: string) {
+      const isP1Winner = winnerSocketId === this.p1SocketId;
+      
+      const winnerId = isP1Winner ? this.p1UserId : this.p2UserId;
+      const loserId = isP1Winner ? this.p2UserId : this.p1UserId;
+
+      const winnerUser = await db.findUserById(winnerId);
+      const loserUser = await db.findUserById(loserId);
+
+      if (winnerUser && loserUser) {
+          winnerUser.score = (winnerUser.score || 0) + POINTS_WIN;
+          loserUser.score = Math.max(0, (loserUser.score || 0) - POINTS_LOSE);
+
+          console.log(`[RANKED] ${winnerUser.nick} (+${POINTS_WIN}) vs ${loserUser.nick} (-${POINTS_LOSE})`);
+          
+          // Num banco SQL, aqui você faria: await db.updateScore(winnerId, newScore);
+      }
   }
 }

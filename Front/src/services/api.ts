@@ -50,7 +50,6 @@ async function fetchWrapper<T>(endpoint: string, options: RequestOptions = {}): 
 }
 
 export const api = {
-    // 4. CORREÇÃO PRINCIPAL: Adicionado o argumento 'options' em todas as funções exportadas
     get: <T>(endpoint: string, options?: RequestOptions) => 
         fetchWrapper<T>(endpoint, { ...options, method: "GET" }),
 

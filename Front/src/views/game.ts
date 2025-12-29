@@ -1,20 +1,40 @@
 // Front/src/views/game.ts
 import { Button } from "@/components/Button";
+import { showModal } from '@/utils/modalManager';
+import confetti from 'canvas-confetti';
 import { Socket } from 'socket.io-client';
 import { LocalGameEngine } from "../game/LocalGameEngine";
-import confetti from 'canvas-confetti';
 import type { GameState } from '../types/game';
 import { PowerUpType } from '../types/game';
 
-import imgRedBall from '../assets/redball.png';
 import imgBlueBall from '../assets/blueball.png';
+import imgRedBall from '../assets/redball.png';
 
-import bgPotatoes from '../assets/bg-login-potatoes.png';
+// PowerUp icons
+import PowerUpBigger from '../assets/PowerUp_Bigger.png';
+import PowerUpPepper from '../assets/PowerUp_Pepper.png';
+import PowerUpShield from '../assets/PowerUpShield.png';
+
+import imgPotatoDown from '../assets/moves/Potato_Down.png';
+import imgPotatoUp from '../assets/moves/Potato_Up.png';
+import imgTomatoDown from '../assets/moves/Tomato_Down.png';
+import imgTomatoUp from '../assets/moves/Tomato_Up.png';
+import imgAIUp from '../assets/moves/AI_Up.png';
+import imgAIDown from '../assets/moves/AI_Down.png';
+
+
+import { getDefaultAvatar } from "@/components/AvatarOptions";
+import { navigateTo } from "@/main";
+import { state } from "@/store/appState";
+import { default as bgMixed, default as bgPotatoes } from '../assets/bg-login-potatoes.png';
 import bgTomatoes from '../assets/bg-login-tomatoes.png';
-import bgMixed from '../assets/bg-login-potatoes.png';
 
 // --- 1. A ESTRUTURA HTML (Visual) ---
 export function getGameHtml() {
+    const user = state.user;
+    const selectedGang = (user?.gang || 'potatoes') as 'potatoes' | 'tomatoes';
+    const avatarSrcP1 = user?.avatar || getDefaultAvatar(selectedGang);
+
     return `
         <div id="game-root" class="relative min-h-screen flex flex-col justify-center items-center overflow-hidden bg-slate-900">
             
@@ -24,7 +44,7 @@ export function getGameHtml() {
                 
                 <div class="flex flex-col items-center gap-2">
                     <div class="relative group">
-                        <img id="p1-photo" src="" class="w-20 h-20 rounded-full border-4 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)] bg-slate-800 object-cover">
+                        <img id="p1-photo" src="${avatarSrcP1}" class="w-20 h-20 rounded-full border-4 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)] bg-slate-800 object-cover">
                         <div id="p1-shield-badge" class="hidden absolute -top-2 -right-2 bg-cyan-400 text-xs font-bold px-2 py-1 rounded-full animate-bounce">SHIELD</div>
                     </div>
                     <span id="p1-nick" class="text-red-400 font-bold font-mono text-lg shadow-black drop-shadow-md">Player 1</span>
@@ -51,14 +71,14 @@ export function getGameHtml() {
             <div class="relative z-10">
                 <div class="relative bg-slate-950 rounded-xl border-4 border-slate-700 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-visible">
                     
-                    <div id="p1-game-avatar" class="absolute left-[-60px] w-[50px] h-[50px] transition-all duration-75 pointer-events-none z-20">
-                         <img id="p1-skin-img" src="" class="w-full h-full drop-shadow-lg filter brightness-110">
+                    <div id="p1-game-avatar" class="absolute left-[-180px] w180px] h-[200px] transition-all duration-75 pointer-events-none z-20">
+                         <img id="p1-skin-img" src="${avatarSrcP1}" class="w-full h-full drop-shadow-lg filter brightness-110">
                     </div>
 
                     <canvas id="pongCanvas" width="800" height="600" class="block rounded-lg cursor-none bg-slate-900/50"></canvas>
 
-                    <div id="p2-game-avatar" class="absolute right-[-60px] w-[50px] h-[50px] transition-all duration-75 pointer-events-none z-20">
-                        <img id="p2-skin-img" src="" class="w-full h-full drop-shadow-lg filter brightness-110 transform scale-x-[-1]">
+                    <div id="p2-game-avatar" class="absolute right-[-180px] w-[200px] h-[200px] transition-all duration-75 pointer-events-none z-20">
+                        <img id="p2-skin-img" src="${avatarSrcP1}" class="w-full h-full drop-shadow-lg filter brightness-110 transform scale-x-[-1]">
                     </div>
 
                     <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-50 rounded-lg">
@@ -88,7 +108,7 @@ export function getGameHtml() {
 
                 <div class="w-auto">
                     ${Button({
-                        id: "btn-quit-game",
+                        id: "btn-game-quit",
                         text: "Abandonar Partida",
                         variant: "danger",
                         className: "py-2 px-6 text-sm hover:bg-red-900/80 transition-colors"
@@ -111,7 +131,12 @@ export class GameController {
     private els: Record<string, HTMLElement | HTMLImageElement> = {};
     private images: Record<string, HTMLImageElement> = {};
     private gameState: GameState | null = null;
-
+    
+    // Rastreamento de movimento dos jogadores
+    private p1LastDirection: string = 'DOWN';
+    private p2LastDirection: string = 'DOWN';
+    private lastP2Y: number = 250;
+    
     constructor(source: Socket | { difficulty: number }) {
         this.canvas = document.getElementById('pongCanvas') as HTMLCanvasElement;
         if (!this.canvas) throw new Error("Canvas não encontrado no DOM");
@@ -130,12 +155,29 @@ export class GameController {
             console.log("Iniciando Modo Multiplayer (Socket)");
             this.socket = source;
             this.setupSocketListeners();
+            const roomId = localStorage.getItem('currentRoomId');
+                
+            if (!roomId) {
+                console.error("Erro: Nenhum RoomID encontrado. Voltando...");
+                navigateTo('multiplayer'); 
+                return;
+            }
+            console.log(`Entrando na sala de jogo: ${roomId}`);
+            this.socket.emit('joinGame', { roomId });
         }
 
         this.renderLoop();
 
-        document.getElementById('btn-quit-game')?.addEventListener('click', () => {
-            this.handleQuit();
+        document.getElementById('btn-game-quit')?.addEventListener('click', () => {
+            // confirmação com o modal
+            showModal({
+                title: "Abandonar Partida",
+                type: "danger",
+                message: "Tem certeza que deseja abandonar a batalha? <br>Se for partida ranqueada, você perderá pontos!",
+                onConfirm: () => navigateTo('dashboard'),
+                confirmText: "Sim, Abandonar",
+                cancelText: "Cancelar"
+            })
         });
     }
 
@@ -155,22 +197,44 @@ export class GameController {
 
     private loadAssets() {
         const assets = {
-            'tomato': imgRedBall, // Placeholder
-            'potato': imgBlueBall, // Placeholder
-            'bg_tomatoes': bgTomatoes, // Placeholder
-            'bg_potatoes': bgPotatoes, // Placeholder
-            'bg_mixed': bgMixed, // Placeholder
-            'icon_big': imgRedBall,   // Placeholder
-            'icon_shield': imgBlueBall, // Placeholder
-            'icon_speed': imgRedBall,   // Placeholder
+            // Tomato
+            'tomato_up': imgTomatoUp,
+            'tomato_down': imgTomatoDown,
+            // Potato
+            'potato_up': imgPotatoUp,
+            'potato_down': imgPotatoDown,
+            // AI
+            'ai_up': imgAIUp,
+            'ai_down': imgAIDown,
+            
+            // Backgrounds
+            'bg_tomatoes': bgTomatoes,
+            'bg_potatoes': bgPotatoes,
+            'bg_mixed': bgMixed,
+            
+            // PowerUp icons
+            'icon_big': PowerUpBigger,
+            'icon_shield': PowerUpShield,
+            'icon_speed': PowerUpPepper,
         };
 
         Object.entries(assets).forEach(([key, src]) => {
-            if (!src) return;
+            if (!src) {
+                console.warn(`Asset ${key} não encontrado`);
+                return;
+            }
             const img = new Image();
             img.src = src;
             this.images[key] = img;
         });
+    }
+
+    private getSkinImage(skin: string, direction: string): string {
+        const directionKey = direction === 'UP' ? 'up' : 'down';
+        const skinKey = `${skin}_${directionKey}`;
+        
+        const image = this.images[skinKey];
+        return image ? image.src : (skin === 'tomato' ? imgRedBall : imgBlueBall);
     }
 
     private toggleOverlay(show: boolean) {
@@ -259,7 +323,10 @@ export class GameController {
         let direction: 'UP' | 'DOWN' | '' = '';
         if (e.key === 'ArrowUp' || e.key === 'w') direction = 'UP';
         if (e.key === 'ArrowDown' || e.key === 's') direction = 'DOWN';
-        if (direction && this.localEngine) this.localEngine.movePaddle(direction);
+        if (direction && this.localEngine) {
+            this.p1LastDirection = direction;
+            this.localEngine.movePaddle(direction);
+        }
     };
 
     private handleInputUpLocal = (e: KeyboardEvent) => {
@@ -274,6 +341,14 @@ export class GameController {
         if (this.els['p2-score']) this.els['p2-score'].innerText = state.player2.score.toString();
         if (this.els['p1-nick']) this.els['p1-nick'].innerText = state.player1.nick;
         if (this.els['p2-nick']) this.els['p2-nick'].innerText = state.player2.nick;
+
+        // Detectar direção do P2 automaticamente comparando posição anterior
+        if (state.player2.y < this.lastP2Y) {
+            this.p2LastDirection = 'UP';
+        } else if (state.player2.y > this.lastP2Y) {
+            this.p2LastDirection = 'DOWN';
+        }
+        this.lastP2Y = state.player2.y;
 
         if (this.els['p1-photo']) {
             const el = this.els['p1-photo'] as HTMLImageElement;
@@ -296,7 +371,7 @@ export class GameController {
         }
 
         // --- 4. Game Avatars (Ao lado da raquete) ---
-        const AVATAR_OFFSET = 25; 
+        const AVATAR_OFFSET = 100; 
         
         const p1Top = state.player1.y + (state.player1.height / 2) - AVATAR_OFFSET;
         const p2Top = state.player2.y + (state.player2.height / 2) - AVATAR_OFFSET;
@@ -304,18 +379,21 @@ export class GameController {
         if (this.els['p1-game-avatar']) this.els['p1-game-avatar'].style.top = `${p1Top}px`;
         if (this.els['p2-game-avatar']) this.els['p2-game-avatar'].style.top = `${p2Top}px`;
 
-        // Imagem P1 (Raquete)
+        // Imagem P1 (Raquete) - Esquerda
         if (this.els['p1-skin-img']) {
             const el = this.els['p1-skin-img'] as HTMLImageElement;
-            const src = state.player1.gameAvatar || imgRedBall;
+            const src = this.getSkinImage(state.player1.skin, this.p1LastDirection);
             if (el.src !== src) el.src = src;
+            // inverter a imagem para o lado esquerdo
+            el.style.transform = 'scaleX(-1)';
         }
-
-        // Imagem P2 (Raquete)
+        
+        // Imagem P2 (Raquete) - Direita
         if (this.els['p2-skin-img']) {
             const el = this.els['p2-skin-img'] as HTMLImageElement;
-            const src = state.player2.gameAvatar || imgBlueBall;
+            const src = this.getSkinImage(state.player2.skin, this.p2LastDirection);
             if (el.src !== src) el.src = src;
+            el.style.transform = 'scaleX(-1)';
         }
 
         // --- 5. Escudos ---
@@ -402,20 +480,22 @@ export class GameController {
         this.ctx.lineWidth = 3;
         this.ctx.stroke();
 
-        // Usa as bolas como ícones temporários para evitar crash
-        // (Você pode substituir isso depois quando tiver ícones reais)
-        let icon = this.images['icon_big']; 
+        // Seleciona a imagem correta baseado no tipo de PowerUp
+        let icon: HTMLImageElement | undefined;
         let color = '#fff';
 
         const typeStr = type as unknown as string;
 
         if (typeStr === 'BIG_PADDLE' || type === PowerUpType.BIG_PADDLE) { 
+            icon = this.images['icon_big'];
             color = '#22c55e'; 
         }
         else if (typeStr === 'SHIELD' || type === PowerUpType.SHIELD) { 
+            icon = this.images['icon_shield'];
             color = '#06b6d4'; 
         }
         else if (typeStr === 'SPEED_BOOST' || type === PowerUpType.SPEED_BOOST) { 
+            icon = this.images['icon_speed'];
             color = '#f97316'; 
         }
 
@@ -468,13 +548,6 @@ export class GameController {
         }
     }
 
-    private handleQuit() {
-        if (confirm("Tem certeza que deseja abandonar a batalha?")) {
-            this.destroy();
-            window.location.href = '/dashboard'; 
-        }
-    }
-
     public destroy() {
         if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
         
@@ -488,7 +561,6 @@ export class GameController {
             this.socket.off('scoreUpdate');
             this.socket.off('gameOver');
             this.socket.off('matchStatus');
-            this.socket.disconnect();
         }
 
         if (this.localEngine) {
