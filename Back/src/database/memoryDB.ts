@@ -91,24 +91,6 @@ class MemoryDatabase {
 	private users: User[] = []
 	private nextId = 1
 
-	constructor() {
-		// CORREÇÃO: Removemos o "as User".
-		// O TypeScript agora sabe que este objeto bate com Omit<User, 'id'>
-		this.addUser({
-			name: 'batata', nick: 'batata', email: 'batata@teste.com',
-			password: '$2b$10$zyn5MC8ezQtsVR/4NQD6W.fdIfSDC.997KP72mNbq2EjBt.hEnWKe',
-			isAnonymous: false, gang: 'potatoes', score: 4500,
-			friends: [], friendRequestsSent: [], friendRequestsReceived: []
-		})
-
-		this.addUser({
-			name: 'tomate', nick: 'tomate', email: 'tomate@teste.com',
-			password: '$2b$10$zyn5MC8ezQtsVR/4NQD6W.fdIfSDC.997KP72mNbq2EjBt.hEnWKe',
-			isAnonymous: false, gang: 'tomatoes', score: 4500,
-			friends: [], friendRequestsSent: [], friendRequestsReceived: []
-		})
-	}
-
 	public getAllUsers(): User[] {
 		return this.users
 	}
