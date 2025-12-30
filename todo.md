@@ -1,11 +1,6 @@
 Tela de perfil
 	Arrumar estatísticas		THAIS DANI
 
-Front end
-	Ao entrar na página e já tiver um token salvo 	DANI
-		verificar se aquele token ainda está válido
-		se não, apagar o token e ir para a tela de login
-
 Back end
 	Verificação de online		DANI
 		Salvar o momento da última interação com o back end

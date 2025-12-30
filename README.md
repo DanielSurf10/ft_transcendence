@@ -225,24 +225,28 @@ lastActivity: Date (auto-updated)
 **danbarbo**:
 - **Core Implementation**: backend routes
 - **Technical Challenges Overcome**:
+- **implemented complex validation logic to handle  friend requests and game invites**
 
 - **Owned Features**: Authentication & Friends System
 
 **leobarbo**:
 - **Core Implementation**: frontend views
 - **Technical Challenges Overcome**:
+- **Seamlessly integrated TOTP 2FA within the SPA, managing secure token storage and timing windows to provide immediate visual feedback without page reloads.**
 
 - **Owned Features**: Profile Assets, PowerUps & 2FA 
 
 **cnatanae**:
 - **Core Implementation**: gameEngine
 - **Technical Challenges Overcome**: 
+- **Synchronized the 60fps server-side physics loop via Socket.IO, implementing client-side interpolation to mask network latency and ensure smooth gameplay.**
 
 - **Owned Features**: GameMatches & engine
 
 **tmalheir**:
 - **Core Implementation**: FrontEnd Views
 - **Technical Challenges Overcome**:
+- **Engineered adaptive AI with dynamic difficulty layers, tuning prediction algorithms to simulate human-like reaction times and imperfections rather than perfect machine play.**
 
 - **Owned Features**: views theme & SoloAI
 
