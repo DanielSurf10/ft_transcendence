@@ -112,7 +112,6 @@ async function renderView(route: Route) {
 			 break;
 		
 		case 'soloIA':
-			// if (checkAnonymousAccess()) return;
 			app.innerHTML = SoloIA.getSoloIAHtml();
 			SoloIA.setupSoloIAEvents((r, p) => navigateTo(r, p));
 			break;
@@ -195,20 +194,19 @@ window.addEventListener('popstate', (event) => {
 
 const token = localStorage.getItem('token')
 
-if (state.user && token) {
-	try {
-		const user = await profileService.getProfile() as any
-		state.user = user;
-		saveState()
-	} catch {
-		navigateTo(`login`);
-		// apagar token inválido
-		localStorage.removeItem('token');
-		state.user = null;
-		saveState()
-	}
-	window.location.hash = `#dashboard`;
-}
+// if (state.user && token) {		// AVISAR DANI Q TA COLOCANDO O BACKGROUND DE FORMA ERRADA
+// 	try {
+// 		const user = await profileService.getProfile() as any
+// 		state.user = user;
+// 		saveState()
+// 	} catch {
+// 		navigateTo(`login`);
+// 		localStorage.removeItem('token');
+// 		state.user = null;
+// 		saveState()
+// 	}
+// 	window.location.hash = `#dashboard`;
+// }
 
 const initialRoute = (window.location.hash.replace('#', '') as Route) || 'login';
 navigateTo(initialRoute, false);

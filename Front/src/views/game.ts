@@ -25,8 +25,9 @@ import imgTomatoUp from '../assets/moves/Tomato_Up.png';
 import imgProfileDefaultTomato from '../assets/Profile_images/Tomato_default.jpg';
 import imgProfileDefaultPotato from '../assets/Profile_images/Potato_default.jpg';
 
+import { avatarsByGang, getDefaultAvatar, type Gang } from "@/components/AvatarOptions";
 
-import { getDefaultAvatar } from "@/components/AvatarOptions";
+
 import { navigateTo } from "@/main";
 import { state } from "@/store/appState";
 import { default as bgMixed, default as bgPotatoes } from '../assets/gameBackground.png';
@@ -358,21 +359,27 @@ export class GameController {
         }
         this.lastP2Y = state.player2.y;
 
-        const resolveAvatar = (avatar: string | undefined, skin: string) => {
-        // 1. Se tiver avatar e não for string vazia, usa ele
-        if (avatar && avatar.trim() !== "") {
+        const resolveAvatar = (avatar: string | undefined, skin: string): string => {
+            const gang: Gang = skin.includes('tomato') ? 'tomatoes' : 'potatoes';
+
+            if (!avatar || avatar.trim() === "") {
+                return getDefaultAvatar(gang);
+            }
+
+            const allAvatars = [...avatarsByGang.potatoes, ...avatarsByGang.tomatoes];
+            const foundOption = allAvatars.find(opt => opt.id === avatar);
+
+            if (foundOption) {
+                return foundOption.src;
+            }
+
             return avatar;
-        }
-        // 2. Se não, usa o padrão baseado na Skin (potato ou tomato)
-        // Nota: Certifique-se que o backend está mandando 'potato' ou 'tomato' na skin
-        return skin.includes('tomato') ? imgProfileDefaultTomato : imgProfileDefaultPotato;
-    };
+        };
 
        if (this.els['p1-photo']) {
             const el = this.els['p1-photo'] as HTMLImageElement;
             const finalSrc = resolveAvatar(state.player1.avatar, state.player1.skin);
         
-            // Só atualiza o DOM se mudou (performance)
             if (el.src !== finalSrc && finalSrc) {
                 el.src = finalSrc;
             }
